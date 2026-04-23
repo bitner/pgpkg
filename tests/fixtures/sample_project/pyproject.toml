@@ -1,0 +1,3 @@
+[tool.pgpkg]
+project_name = "sampleext"
+prefix = "sampleext"
