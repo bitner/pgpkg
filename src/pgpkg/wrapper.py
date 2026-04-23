@@ -172,7 +172,7 @@ def scaffold_wrapper(
     (output_dir / "README.md").write_text(
         f"# {dist_name_final}\n\n"
         f"Wrapper for `{project.config.project_name}` migrations.\n\n"
-        f"Build: `uv build`\n"
+        f"Build: `uv build --out-dir dist`\n"
         f"Run:   `uv run {cli_name} migrate -d mydb -h localhost`\n",
         encoding="utf-8",
     )

@@ -1,4 +1,5 @@
 """CLI for sampleext: bakes migrations.tar.zst in the wheel."""
+
 from __future__ import annotations
 
 import argparse
