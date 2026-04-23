@@ -19,9 +19,12 @@ def test_unreleased_sorts_last():
     assert sorted_versions(["0.2.0", UNRELEASED, "0.1.0"]) == ["0.1.0", "0.2.0", UNRELEASED]
 
 
-def test_sort_key_comparable():
-    assert version_sort_key("0.1.0") < version_sort_key("0.2.0")
-    assert version_sort_key("0.2.0") < version_sort_key(UNRELEASED)
+def test_sort_key_orders_versions_via_sorted():
+    assert sorted([UNRELEASED, "0.2.0", "0.1.0"], key=version_sort_key) == [
+        "0.1.0",
+        "0.2.0",
+        UNRELEASED,
+    ]
 
 
 def test_highest_released_excludes_unreleased():

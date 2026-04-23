@@ -26,7 +26,9 @@ def test_ensure_tracking_idempotent(pg_url: str):
         ensure_tracking(conn)
         with conn.cursor() as cur:
             cur.execute("SELECT to_regclass('pgpkg.migrations') IS NOT NULL")
-            assert cur.fetchone()[0] is True
+            row = cur.fetchone()
+            assert row is not None
+            assert row[0] is True
 
 
 def test_current_version_none_then_recorded(pg_url: str):

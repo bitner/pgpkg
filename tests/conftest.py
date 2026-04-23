@@ -4,6 +4,7 @@ import atexit
 import os
 import shutil
 from pathlib import Path
+from unittest import SkipTest
 
 import pytest
 
@@ -30,9 +31,9 @@ def pg_url() -> str:
     if url:
         return url
     try:
-        from testcontainers.postgres import PostgresContainer  # type: ignore
-    except ImportError:
-        pytest.skip("testcontainers not installed and PGPKG_TEST_DB_URL not set")
+        from testcontainers.postgres import PostgresContainer
+    except ImportError as exc:
+        raise SkipTest("testcontainers not installed and PGPKG_TEST_DB_URL not set") from exc
 
     container = PostgresContainer("postgres:17-alpine")
     container.start()
@@ -58,8 +59,5 @@ def staged_project(sample_project: Path) -> Path:
 
     func_body = (sample_project / "sql" / "020_functions.sql").read_text()
     incr = sample_project / "migrations" / "sampleext--0.1.0--0.2.0.sql"
-    incr.write_text(
-        "-- pgpkg incremental 0.1.0 -> 0.2.0\n"
-        + func_body
-    )
+    incr.write_text("-- pgpkg incremental 0.1.0 -> 0.2.0\n" + func_body)
     return sample_project

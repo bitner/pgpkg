@@ -26,17 +26,13 @@ def test_stage_version_writes_file(sample_project: Path):
 
 
 def test_no_sql_dir(tmp_path: Path):
-    (tmp_path / "pyproject.toml").write_text(
-        '[tool.pgpkg]\nproject_name = "x"\n'
-    )
+    (tmp_path / "pyproject.toml").write_text('[tool.pgpkg]\nproject_name = "x"\n')
     with pytest.raises(LayoutError):
         render_staged_sql(load_config(tmp_path), "0.1.0")
 
 
 def test_no_fragments(tmp_path: Path):
-    (tmp_path / "pyproject.toml").write_text(
-        '[tool.pgpkg]\nproject_name = "x"\n'
-    )
+    (tmp_path / "pyproject.toml").write_text('[tool.pgpkg]\nproject_name = "x"\n')
     (tmp_path / "sql").mkdir()
     with pytest.raises(LayoutError):
         render_staged_sql(load_config(tmp_path), "0.1.0")
