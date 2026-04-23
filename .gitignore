@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.pytype/
+.nox/
+.tox/
+.coverage
+.coverage.*
+htmlcov/
+
+# venvs / tools
+.venv/
+.venv-*/
+.python-version
+
+# build outputs
+dist/
+build/
+site/
+.mkdocs_cache/
+*.whl
+
+# packaging metadata
+pip-wheel-metadata/
+
+# editor / OS cruft
+.DS_Store
+.idea/
+
+# local-only markdown notes
+*_SETUP.md
+*_PLAN.md
