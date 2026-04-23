@@ -30,3 +30,7 @@ pip-wheel-metadata/
 # editor / OS cruft
 .DS_Store
 .idea/
+
+# local-only setup and planning docs (never publish)
+GITHUB_PYPI_SETUP.md
+PROJECT_PLAN.md
