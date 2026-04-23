@@ -21,6 +21,9 @@ ordered `sql/` directory. `pgpkg` does everything else:
 6. **`verify`** — round-trips every edge `(a -> b)` through two throwaway
    databases to prove the incremental produces the same schema as loading
    `<prefix>--b.sql`.
+7. **`bundle`** — writes a compressed `tar.zst` artifact containing
+   `migrations/` plus `sql/pre/` and `sql/post/` for automation or custom
+   packaging flows.
 
 ## Quickstart
 
@@ -49,6 +52,21 @@ pgpkg migrate -d mydb -h localhost --to 0.2.0
 
 See [docs/](docs/) for the full manual, or [PROJECT_PLAN.md](PROJECT_PLAN.md)
 for the design document.
+
+## Development
+
+```bash
+uv sync --extra dev --extra diff
+uv run pre-commit install
+uv run pre-commit run --all-files
+uv run ty check src tests
+uv run pytest -q
+uv build --out-dir dist
+uv run mkdocs build --strict
+```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the release workflow and trusted-publishing setup.
+For initial repository and publishing bootstrap, use [GITHUB_PYPI_SETUP.md](GITHUB_PYPI_SETUP.md).
 
 ## License
 
