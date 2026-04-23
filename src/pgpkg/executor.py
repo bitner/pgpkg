@@ -122,7 +122,10 @@ def apply_plan(
 
 
 def _execute_step(
-    cur, pre_sql: str, body_sql: str, post_sql: str  # type: ignore[no-untyped-def]
+    cur,
+    pre_sql: str,
+    body_sql: str,
+    post_sql: str,  # type: ignore[no-untyped-def]
 ) -> None:
     if pre_sql.strip():
         cur.execute(pre_sql)

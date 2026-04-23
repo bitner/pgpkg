@@ -52,9 +52,7 @@ def plan(
                 source=None, target=target, bootstrap_base=bootstrap_base, steps=[]
             )
         steps = _shortest_path(catalog, bootstrap_version, target)
-        return MigrationPlan(
-            source=None, target=target, bootstrap_base=bootstrap_base, steps=steps
-        )
+        return MigrationPlan(source=None, target=target, bootstrap_base=bootstrap_base, steps=steps)
 
     # Incremental path
     if target not in catalog.versions:

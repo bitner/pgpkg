@@ -73,13 +73,9 @@ def build_catalog(config) -> Catalog:  # type: ignore[no-untyped-def]
             assert isinstance(parsed, IncrementalFilename)
             key = (parsed.from_version, parsed.to_version)
             if key in seen_edges:
-                raise CatalogError(
-                    f"Duplicate incremental file: {path.name}"
-                )
+                raise CatalogError(f"Duplicate incremental file: {path.name}")
             if parsed.from_version == parsed.to_version:
-                raise CatalogError(
-                    f"Self-loop incremental disallowed: {path.name}"
-                )
+                raise CatalogError(f"Self-loop incremental disallowed: {path.name}")
             seen_edges.add(key)
             edges.append((parsed.from_version, parsed.to_version, path))
 

@@ -37,8 +37,7 @@ class ArtifactManifest:
                 "project_name": self.project_name,
                 "prefix": self.prefix,
                 "entries": [
-                    {"name": e.name, "sha256": e.sha256, "size": e.size}
-                    for e in self.entries
+                    {"name": e.name, "sha256": e.sha256, "size": e.size} for e in self.entries
                 ],
             },
             indent=2,
@@ -65,9 +64,7 @@ def build_artifact(config: ProjectConfig, output_path: Path) -> Path:
         post/<all *.sql>
     """
     if not config.migrations_dir.exists():
-        raise PgpkgError(
-            f"No migrations/ directory at {config.migrations_dir}", code="E_ARTIFACT"
-        )
+        raise PgpkgError(f"No migrations/ directory at {config.migrations_dir}", code="E_ARTIFACT")
 
     files: list[tuple[str, bytes]] = []  # (archive_name, content)
     for p in sorted(config.migrations_dir.iterdir()):
@@ -156,9 +153,7 @@ def load_artifact(path: Path) -> LoadedArtifact:
     for entry in manifest.entries:
         data = files.get(entry.name)
         if data is None:
-            raise PgpkgError(
-                f"Artifact {path} missing entry {entry.name}", code="E_ARTIFACT"
-            )
+            raise PgpkgError(f"Artifact {path} missing entry {entry.name}", code="E_ARTIFACT")
         sha = hashlib.sha256(data).hexdigest()
         if sha != entry.sha256:
             raise PgpkgError(
