@@ -21,7 +21,8 @@ def _add_db_args(p: argparse.ArgumentParser) -> None:
     p.add_argument("-U", "--user", help="DB user (PGUSER)", default=None)
     # password: take from PGPASSWORD or interactive prompt; -W requests prompt
     p.add_argument(
-        "-W", "--password-prompt",
+        "-W",
+        "--password-prompt",
         action="store_true",
         help="Prompt for password (otherwise PGPASSWORD or libpq fallback is used)",
     )
@@ -82,7 +83,9 @@ def build_parser() -> argparse.ArgumentParser:
         help="Generate <prefix>--<from>--<to>.sql by diffing two staged base files",
     )
     _project_root_arg(p_make)
-    p_make.add_argument("--from", dest="from_version", help="Source version (default: highest released)")
+    p_make.add_argument(
+        "--from", dest="from_version", help="Source version (default: highest released)"
+    )
     p_make.add_argument("--to", dest="to_version", help=f"Target version (default: '{UNRELEASED}')")
     p_make.add_argument("--output", type=Path, help="Override output path")
     p_make.add_argument(
@@ -104,7 +107,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     # migrate
     p_mig = sub.add_parser(
-        "migrate", help="Apply migrations to a live database", add_help=False,
+        "migrate",
+        help="Apply migrations to a live database",
+        add_help=False,
     )
     p_mig.add_argument("--help", action="help", help="Show help and exit")
     _project_root_arg(p_mig)
@@ -126,7 +131,9 @@ def build_parser() -> argparse.ArgumentParser:
         help="Scaffold a wrapper Python project that bakes migrations/ into a wheel",
     )
     _project_root_arg(p_wheel)
-    p_wheel.add_argument("--output-dir", type=Path, required=True, help="Where to write the wrapper project")
+    p_wheel.add_argument(
+        "--output-dir", type=Path, required=True, help="Where to write the wrapper project"
+    )
     p_wheel.add_argument(
         "--cli-name",
         help="Console script name (default: <project>-migrator)",
@@ -187,10 +194,7 @@ def _cmd_info(args: argparse.Namespace) -> int:
         "migrations_dir": str(project.config.migrations_dir),
         "versions": project.catalog.versions,
         "base_files": {v: str(p) for v, p in project.catalog.base_files.items()},
-        "edges": [
-            {"from": f, "to": t, "file": str(p)}
-            for f, t, p in project.catalog.edges
-        ],
+        "edges": [{"from": f, "to": t, "file": str(p)} for f, t, p in project.catalog.edges],
     }
     if args.json:
         print(json.dumps(info, indent=2))
