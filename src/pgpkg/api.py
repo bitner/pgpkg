@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
+import atexit
+import shutil
 from pathlib import Path
+
+from psycopg import sql
 
 from . import _conn
 from .artifact import LoadedArtifact, build_artifact, load_artifact
@@ -207,8 +211,10 @@ def _read_live_version_safe(conn, config: ProjectConfig) -> str | None:  # type:
                 conn.rollback()
                 return None
             cur.execute(
-                f"SELECT version FROM {config.tracking_schema}.{config.tracking_table} "
-                "ORDER BY id DESC LIMIT 1"
+                sql.SQL("SELECT version FROM {schema}.{table} ORDER BY id DESC LIMIT 1").format(
+                    schema=sql.Identifier(config.tracking_schema),
+                    table=sql.Identifier(config.tracking_table),
+                )
             )
             row = cur.fetchone()
             conn.rollback()
@@ -273,10 +279,11 @@ def _config_and_catalog_from_artifact(
     temp directory to materialize files so existing parsers work unchanged."""
     import tempfile
 
-
     tmp_root = Path(tempfile.mkdtemp(prefix="pgpkg_artifact_"))
     mig_dir = tmp_root / "migrations"
     mig_dir.mkdir()
+    # Register cleanup so the temp tree is removed when the process exits.
+    atexit.register(shutil.rmtree, tmp_root, True)
     for name, data in artifact.migrations_files().items():
         (mig_dir / Path(name).name).write_bytes(data)
 

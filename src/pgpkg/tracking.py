@@ -3,27 +3,30 @@
 from __future__ import annotations
 
 import hashlib
-from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    import psycopg
+import psycopg
+from psycopg import sql
 
 
-def tracking_ddl(schema: str = "pgpkg", table: str = "migrations") -> str:
+def tracking_ddl(schema: str = "pgpkg", table: str = "migrations") -> sql.Composed:
     """Return the SQL to install the tracking schema/table (idempotent)."""
-    return f"""
-CREATE SCHEMA IF NOT EXISTS {schema};
-CREATE TABLE IF NOT EXISTS {schema}.{table} (
-    id          serial PRIMARY KEY,
-    version     text NOT NULL,
-    applied_at  timestamptz NOT NULL DEFAULT now(),
-    sha256      text NOT NULL,
-    filename    text NOT NULL
-);
-""".strip()
+    schema_ident = sql.Identifier(schema)
+    table_ident = sql.Identifier(table)
+    return sql.SQL(
+        "CREATE SCHEMA IF NOT EXISTS {schema};"
+        "CREATE TABLE IF NOT EXISTS {schema}.{table} ("
+        "id serial PRIMARY KEY, "
+        "version text NOT NULL, "
+        "applied_at timestamptz NOT NULL DEFAULT now(), "
+        "sha256 text NOT NULL, "
+        "filename text NOT NULL"
+        ");"
+    ).format(schema=schema_ident, table=table_ident)
 
 
-def ensure_tracking(conn: psycopg.Connection, *, schema: str = "pgpkg", table: str = "migrations") -> None:
+def ensure_tracking(
+    conn: psycopg.Connection, *, schema: str = "pgpkg", table: str = "migrations"
+) -> None:
     """Install the tracking schema/table if missing. Idempotent."""
     with conn.cursor() as cur:
         cur.execute(tracking_ddl(schema, table))
@@ -34,13 +37,19 @@ def current_version(
 ) -> str | None:
     """Return the most recently applied version, or None if nothing applied."""
     with conn.cursor() as cur:
-        cur.execute(
-            f"SELECT to_regclass('{schema}.{table}')"
-        )
-        exists = cur.fetchone()[0]
+        cur.execute("SELECT to_regclass(%s)", (f"{schema}.{table}",))
+        exists_row = cur.fetchone()
+        if exists_row is None:
+            return None
+        exists = exists_row[0]
         if exists is None:
             return None
-        cur.execute(f"SELECT version FROM {schema}.{table} ORDER BY id DESC LIMIT 1")
+        cur.execute(
+            sql.SQL("SELECT version FROM {schema}.{table} ORDER BY id DESC LIMIT 1").format(
+                schema=sql.Identifier(schema),
+                table=sql.Identifier(table),
+            )
+        )
         row = cur.fetchone()
         return row[0] if row else None
 
@@ -57,7 +66,12 @@ def record_applied(
     """Insert a row noting that `version` was just applied."""
     with conn.cursor() as cur:
         cur.execute(
-            f"INSERT INTO {schema}.{table} (version, sha256, filename) VALUES (%s, %s, %s)",
+            sql.SQL(
+                "INSERT INTO {schema}.{table} (version, sha256, filename) VALUES (%s, %s, %s)"
+            ).format(
+                schema=sql.Identifier(schema),
+                table=sql.Identifier(table),
+            ),
             (version, sha256, filename),
         )
 
