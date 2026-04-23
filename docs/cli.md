@@ -48,6 +48,23 @@ pgpkg stageversion <version> [--output PATH] [--no-overwrite]
 Renders `sql/` into a single `<prefix>--<version>.sql`. Ignores `sql/pre/`
 and `sql/post/` (they run at apply time).
 
+## `info`
+
+```
+pgpkg info [--json]
+```
+
+Prints resolved project metadata including the inferred prefix, SQL and
+migrations directories, known versions, base files, and graph edges.
+
+## `versions`
+
+```
+pgpkg versions
+```
+
+Prints known versions in sorted order, including `unreleased` when present.
+
 ## `makemigration`
 
 ```
@@ -59,6 +76,23 @@ to spawn tempdbs via `results.temporary_local_db`. Defaults to
 `postgresql:///postgres`, i.e. a local admin connection through the peer
 socket.
 
+## `graph`
+
+```
+pgpkg graph [--format text|dot]
+```
+
+Shows the version graph either as plain text or Graphviz DOT.
+
+## `plan`
+
+```
+pgpkg plan [--source VERSION] [--to VERSION]
+```
+
+Shows the shortest migration plan. If `--source` is omitted, the plan assumes
+a fresh install and may start with a bootstrap base file.
+
 ## `migrate`
 
 ```
@@ -68,6 +102,15 @@ pgpkg migrate [--to VERSION] [--dry-run] <db-flags>
 Runs inside one transaction with `pg_advisory_xact_lock`. `--dry-run`
 executes the same SQL inside a transaction, then rolls back.
 
+## `verify`
+
+```
+pgpkg verify [--base-url URL]
+```
+
+Round-trips every incremental edge through temporary databases and confirms
+that applying `a -> b` produces the same resulting schema as loading base `b`.
+
 ## `wheel`
 
 ```
@@ -75,3 +118,13 @@ pgpkg wheel --output-dir PATH [--cli-name NAME]
 ```
 
 Scaffolds a wrapper Python project. See [Wrapping into a wheel](wrapper.md).
+
+## `bundle`
+
+```
+pgpkg bundle --output PATH
+```
+
+Writes a compressed `tar.zst` artifact containing `migrations/`, `sql/pre/`,
+and `sql/post/`. This is useful for automation or for shipping migration
+artifacts separately from a full wrapper project.

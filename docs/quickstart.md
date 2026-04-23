@@ -73,7 +73,7 @@ loading `base(b)` directly.
 
 ```
 pgpkg wheel --output-dir ../myext-migrator
-cd ../myext-migrator && uv build
+cd ../myext-migrator && uv build --out-dir dist
 ```
 
 The resulting wheel ships a `<project>-migrator migrate` console script that

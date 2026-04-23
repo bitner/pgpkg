@@ -24,6 +24,7 @@ code. You own:
   `base(a) + a→b = base(b)`
 - **wheel** — scaffold a tiny wrapper Python project that bakes the staged
   artifacts into a wheel + console script
+- **bundle** — emit a raw `tar.zst` artifact with migrations plus pre/post SQL
 
 ## Install
 

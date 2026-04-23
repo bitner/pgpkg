@@ -40,7 +40,7 @@ myext-migrator/
 
 ```
 cd myext-migrator
-uv build
+uv build --out-dir dist
 pip install dist/myext_migrator-*.whl
 ```
 
