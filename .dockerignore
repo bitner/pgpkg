@@ -1,0 +1,30 @@
+# VCS
+.git
+.gitignore
+.github
+
+# Python caches and virtual environments
+__pycache__
+*.py[cod]
+.pytest_cache
+.ruff_cache
+.mypy_cache
+.venv
+.venv-*
+
+# Build artifacts
+dist
+build
+site
+*.whl
+*.egg-info
+pip-wheel-metadata
+
+# Local tooling artifacts
+.coverage
+.coverage.*
+htmlcov
+
+# Editor and OS files
+.idea
+.DS_Store
