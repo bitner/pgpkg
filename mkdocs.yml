@@ -1,6 +1,7 @@
 site_name: pgpkg
 site_description: "PostgreSQL migration toolkit — stage versions, generate incrementals via results, apply with libpq."
-repo_url: https://example.invalid/pgpkg
+repo_url: !ENV [PGPKG_REPO_URL, ""]
+site_url: !ENV [PGPKG_SITE_URL, ""]
 theme:
   name: material
   features:
