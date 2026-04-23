@@ -1,0 +1,24 @@
+site_name: pgpkg
+site_description: "PostgreSQL migration toolkit — stage versions, generate incrementals via results, apply with libpq."
+repo_url: !ENV [PGPKG_REPO_URL, ""]
+site_url: !ENV [PGPKG_SITE_URL, ""]
+theme:
+  name: material
+  features:
+    - navigation.instant
+    - content.code.copy
+nav:
+  - Home: index.md
+  - Quickstart: quickstart.md
+  - Project layout: layout.md
+  - CLI reference: cli.md
+  - Python API: api.md
+  - Wrapping into a wheel: wrapper.md
+  - Architecture: architecture.md
+markdown_extensions:
+  - admonition
+  - pymdownx.superfences
+  - pymdownx.details
+  - toc:
+      permalink: true
+strict: true
