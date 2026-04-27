@@ -34,3 +34,6 @@ pip-wheel-metadata/
 # local-only markdown notes
 *_SETUP.md
 *_PLAN.md
+
+# hookify rules (personal dev tooling, never commit)
+.claude/*.local.md
