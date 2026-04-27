@@ -25,6 +25,18 @@ ordered `sql/` directory. `pgpkg` does everything else:
    `migrations/` plus `sql/pre/` and `sql/post/` for automation or custom
    packaging flows.
 
+## Prerequisites
+
+- **Python ≥ 3.11** and **pip** (or **uv**)
+- **`pgpkg[diff]`** — the `makemigration` command requires the optional
+  [results](https://github.com/djrobstep/results) dependency:
+  `pip install 'pgpkg[diff]'`
+- **Docker** — `makemigration` and `verify` spin up throwaway PostgreSQL
+  containers via `testcontainers`; Docker must be running
+- **libpq** — `migrate` connects to a live database using standard libpq
+  environment variables (`PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER`,
+  `PGPASSWORD`) or explicit `-h/-p/-d/-U/--dsn` flags
+
 ## Quickstart
 
 ```bash

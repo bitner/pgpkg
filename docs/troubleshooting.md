@@ -49,23 +49,6 @@ pip install 'pgpkg[diff]'
 uv sync --extra diff
 ```
 
-## Session-recall shows little or no context
-
-Symptom:
-- `session-recall files --json --limit 10` returns zero files.
-
-Cause:
-- Cold-start corpus (not enough historical sessions yet).
-
-Fix:
-- Keep using baseline recall commands each session.
-- Complete several real edit sessions; corpus quality improves over time.
-- Verify health:
-
-```bash
-session-recall health
-```
-
 ## Release workflow version mismatch
 
 Symptom:
