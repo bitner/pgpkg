@@ -50,10 +50,8 @@ jobs:
       - name: Smoke test wheel install
         run: |
           uv venv .venv-smoke
-          . .venv-smoke/bin/activate
-          python -m pip install --upgrade pip
-          python -m pip install dist/*.whl
-          pgpkg --help
+          uv pip install --python .venv-smoke/bin/python dist/*.whl
+          .venv-smoke/bin/pgpkg --help
 
       - name: Upload distributions
         uses: actions/upload-artifact@v4
