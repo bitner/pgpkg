@@ -27,6 +27,12 @@ dependencies = [
     "tomli; python_version < '3.11'",
 ]
 
+[project.urls]
+Homepage = "https://github.com/bitner/pgpkg"
+Repository = "https://github.com/bitner/pgpkg"
+Documentation = "https://bitner.github.io/pgpkg/"
+Issues = "https://github.com/bitner/pgpkg/issues"
+
 [project.optional-dependencies]
 diff = ["results>=1.4"]
 dev = [
@@ -66,6 +72,7 @@ include = [
     "/docs",
     "/examples",
     "/README.md",
+    "/CHANGELOG.md",
     "/CONTRIBUTING.md",
     "/LICENSE",
     "/mkdocs.yml",

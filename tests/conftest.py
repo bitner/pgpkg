@@ -35,7 +35,8 @@ def pg_url() -> str:
     except ImportError as exc:
         raise SkipTest("testcontainers not installed and PGPKG_TEST_DB_URL not set") from exc
 
-    container = PostgresContainer("postgres:17-alpine")
+    image = os.environ.get("PGPKG_TEST_POSTGRES_IMAGE", "postgres:17-alpine")
+    container = PostgresContainer(image)
     container.start()
     url = container.get_connection_url().replace("postgresql+psycopg2://", "postgresql://")
     atexit.register(container.stop)

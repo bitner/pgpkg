@@ -13,6 +13,10 @@ on:
         options:
           - testpypi
           - pypi
+      expected_version:
+        description: Required for manual PyPI publish (e.g. 0.1.0)
+        required: false
+        default: ""
 
 permissions:
   contents: read
@@ -42,6 +46,14 @@ jobs:
 
       - name: Check distributions
         run: uv run python -m twine check dist/*
+
+      - name: Smoke test wheel install
+        run: |
+          uv venv .venv-smoke
+          . .venv-smoke/bin/activate
+          python -m pip install --upgrade pip
+          python -m pip install dist/*.whl
+          pgpkg --help
 
       - name: Upload distributions
         uses: actions/upload-artifact@v4
@@ -84,6 +96,27 @@ jobs:
         with:
           name: python-package-distributions
           path: dist
+
+      - name: Verify expected version matches built version
+        run: |
+          set -euo pipefail
+          if [[ "${GITHUB_EVENT_NAME}" == "release" ]]; then
+            expected_version="${GITHUB_REF_NAME#v}"
+          else
+            expected_version="${{ inputs.expected_version }}"
+            if [[ -z "$expected_version" ]]; then
+              echo "inputs.expected_version is required for workflow_dispatch PyPI publish."
+              exit 1
+            fi
+          fi
+          built_wheel="$(ls dist/pgpkg-*.whl | head -n1)"
+          built_version="$(basename "$built_wheel" | sed -E 's/^pgpkg-([0-9][^-]*)-.*/\1/')"
+          echo "Expected version: $expected_version"
+          echo "Built wheel version: $built_version"
+          if [[ "$built_version" != "$expected_version" ]]; then
+            echo "Release tag and built package version do not match."
+            exit 1
+          fi
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1

@@ -15,6 +15,7 @@ nav:
   - Python API: api.md
   - Wrapping into a wheel: wrapper.md
   - Architecture: architecture.md
+  - Troubleshooting: troubleshooting.md
 markdown_extensions:
   - admonition
   - pymdownx.superfences

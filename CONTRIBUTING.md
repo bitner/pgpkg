@@ -26,7 +26,9 @@ uv run mkdocs build --strict
 
 ## Releasing
 
-1. Run the full local gate:
+1. Ensure package version is correct in `src/pgpkg/__init__.py`.
+
+2. Run the full local gate:
 
 ```bash
 uv run pre-commit run --all-files
@@ -37,9 +39,21 @@ uv run python -m twine check dist/*
 uv run mkdocs build --strict
 ```
 
-2. For a smoke release, run the `Publish` GitHub Actions workflow manually with `repository=testpypi`.
-3. Verify the TestPyPI install path.
-4. Create a GitHub release to publish to PyPI.
+3. For a smoke release, run the `Publish` workflow manually with `repository=testpypi`.
+
+4. Verify TestPyPI install path in a clean venv:
+
+```bash
+python -m venv .venv-testpypi
+. .venv-testpypi/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -i https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple pgpkg
+pgpkg --help
+```
+
+5. Create release tag `vX.Y.Z` matching `src/pgpkg/__init__.py::__version__`.
+
+6. Publish to PyPI by creating a GitHub Release from that tag (or by running `Publish` with `repository=pypi` only if version parity is confirmed).
 
 ## Trusted publishing setup
 
@@ -50,6 +64,8 @@ Before the publish workflow can work, configure trusted publishing for both envi
 
 No API tokens are required when trusted publishing is configured correctly.
 
-## Remaining release metadata
+## Release policy guardrails
 
-Before the first public release, set the real repository, documentation, and issue-tracker URLs in `pyproject.toml` once the canonical remote exists.
+- The release tag version must match the built package version exactly.
+- TestPyPI install smoke test is required before first PyPI publish.
+- If workflow_dispatch is used for PyPI publish, confirm version parity before running it.
