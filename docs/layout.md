@@ -26,10 +26,41 @@
 | `prefix` | `project_name` | file prefix for `<prefix>--<version>.sql` |
 | `sql_dir` | `sql` | path to the source tree |
 | `migrations_dir` | `migrations` | where staged base files + incrementals live |
-| `pre_dir` | `sql/pre` | pre hooks |
-| `post_dir` | `sql/post` | post hooks |
-| `tracking_schema` | `pgpkg` | reserved, stores `migrations` table |
-| `tracking_table` | `migrations` | reserved |
+| `version_source` | *(unset)* | `module:attribute` loader for a custom live-version source |
+
+Derived paths are not configurable separately:
+
+- `pre_dir` is always `<sql_dir>/pre`.
+- `post_dir` is always `<sql_dir>/post`.
+
+Tracking settings live under a nested table:
+
+| key | default | purpose |
+|---|---|---|
+| `[tool.pgpkg.tracking].schema` | `pgpkg` | schema for pgpkg's default tracking table |
+| `[tool.pgpkg.tracking].table` | `migrations` | table for pgpkg's default tracking rows |
+
+Example:
+
+```toml
+[tool.pgpkg]
+project_name = "myext"
+prefix = "myext"
+version_source = "myext.db:version_source"
+
+[tool.pgpkg.tracking]
+schema = "ops"
+table = "schema_versions"
+```
+
+`version_source` must resolve to an object or zero-argument class with
+`read_live_version(conn, config)` and
+`record_applied(conn, config, *, version, sha256, filename)` methods. The
+module is imported relative to the project root.
+
+`[tool.pgpkg].pre_post_in_base` is intentionally rejected in `0.1.x`.
+Keep pre/post SQL as runtime hooks or handle baked-in behavior in a custom
+wrapper.
 
 ## Filename grammar
 
@@ -49,7 +80,7 @@ literal `unreleased`, which always sorts last.
 
 ## Tracking table
 
-`pgpkg` owns the `pgpkg.migrations` table:
+By default, `pgpkg` owns the `pgpkg.migrations` table:
 
 ```sql
 CREATE TABLE pgpkg.migrations (
@@ -61,4 +92,6 @@ CREATE TABLE pgpkg.migrations (
 );
 ```
 
-Never write to it by hand. The `pgpkg` schema is reserved.
+Never write to it by hand. If you configure a custom `version_source`, that
+source becomes the authoritative runtime view; pgpkg's own tracking table can
+still be kept in sync unless the source declares `writes_default_tracking = True`.

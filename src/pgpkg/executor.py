@@ -10,10 +10,11 @@ from .config import ProjectConfig
 from .errors import ExecutionError
 from .planner import MigrationPlan, plan
 from .tracking import (
+    DefaultVersionSource,
+    _session_role,
     acquire_advisory_lock,
-    current_version,
     ensure_tracking,
-    record_applied,
+    resolve_version_source,
     sha256_text,
 )
 from .versioning import default_target
@@ -52,6 +53,7 @@ def apply_plan(
     pre_sql: str = "",
     post_sql: str = "",
     dry_run: bool = False,
+    version_source=None,
 ) -> ApplyResult:
     """Apply a precomputed plan inside a single transaction with an advisory lock.
 
@@ -65,13 +67,15 @@ def apply_plan(
     result = ApplyResult()
     schema = config.tracking_schema
     table = config.tracking_table
+    resolved_version_source = resolve_version_source(config, override=version_source)
+    default_version_source = DefaultVersionSource()
 
     try:
         acquire_advisory_lock(conn, config.project_name)
         ensure_tracking(conn, schema=schema, table=table)
 
         # Re-check the live version inside the locked txn, in case it changed.
-        live_version = current_version(conn, schema=schema, table=table)
+        live_version = resolved_version_source.read_live_version(conn, config)
 
         with conn.cursor() as cur:
             # Bootstrap if requested by the plan AND nothing is installed.
@@ -82,13 +86,14 @@ def apply_plan(
                 # The base file IS for `target` if target is in catalog.base_files,
                 # otherwise it's for the highest reachable base.
                 bootstrap_version = _infer_bootstrap_version(catalog, plan_obj)
-                record_applied(
+                _record_version_state(
                     conn,
-                    bootstrap_version,
-                    sha256_text(base_sql),
-                    plan_obj.bootstrap_base.name,
-                    schema=schema,
-                    table=table,
+                    config,
+                    resolved_version_source,
+                    default_version_source,
+                    version=bootstrap_version,
+                    sha256=sha256_text(base_sql),
+                    filename=plan_obj.bootstrap_base.name,
                 )
                 result.bootstrapped_from = bootstrap_version
                 result.final_version = bootstrap_version
@@ -100,13 +105,14 @@ def apply_plan(
             for step in plan_obj.steps:
                 inc_sql = step.file.read_text(encoding="utf-8")
                 _execute_step(cur, pre_sql, inc_sql, post_sql)
-                record_applied(
+                _record_version_state(
                     conn,
-                    step.to_version,
-                    sha256_text(inc_sql),
-                    step.file.name,
-                    schema=schema,
-                    table=table,
+                    config,
+                    resolved_version_source,
+                    default_version_source,
+                    version=step.to_version,
+                    sha256=sha256_text(inc_sql),
+                    filename=step.file.name,
                 )
                 result.applied_steps.append((step.from_version, step.to_version))
                 result.final_version = step.to_version
@@ -142,6 +148,49 @@ def _infer_bootstrap_version(catalog: Catalog, plan_obj: MigrationPlan) -> str:
         if p == base_path:
             return v
     raise ExecutionError(f"Bootstrap base file {base_path} not found in catalog")
+
+
+def _record_version_state(
+    conn: psycopg.Connection,
+    config: ProjectConfig,
+    resolved_version_source,
+    default_version_source: DefaultVersionSource,
+    *,
+    version: str,
+    sha256: str,
+    filename: str,
+) -> None:
+    with _session_role(conn):
+        source_manages_default_tracking = bool(
+            getattr(resolved_version_source, "writes_default_tracking", False)
+        )
+
+        if type(resolved_version_source) is DefaultVersionSource:
+            resolved_version_source.record_applied(
+                conn,
+                config,
+                version=version,
+                sha256=sha256,
+                filename=filename,
+            )
+            return
+
+        if not source_manages_default_tracking:
+            default_version_source.record_applied(
+                conn,
+                config,
+                version=version,
+                sha256=sha256,
+                filename=filename,
+            )
+
+        resolved_version_source.record_applied(
+            conn,
+            config,
+            version=version,
+            sha256=sha256,
+            filename=filename,
+        )
 
 
 def make_default_plan(

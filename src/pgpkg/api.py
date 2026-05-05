@@ -6,8 +6,6 @@ import atexit
 import shutil
 from pathlib import Path
 
-from psycopg import sql
-
 from . import _conn
 from .artifact import LoadedArtifact, build_artifact, load_artifact
 from .catalog import Catalog, build_catalog
@@ -17,6 +15,7 @@ from .errors import PgpkgError
 from .executor import ApplyResult, apply_plan, make_default_plan
 from .planner import MigrationPlan, plan, render_graph_dot, render_graph_text
 from .staging import read_pre_post, write_staged_file
+from .tracking import resolve_version_source
 
 __all__ = [
     "PgpkgError",
@@ -25,6 +24,7 @@ __all__ = [
     "load_config",
     "load_project",
     "list_versions",
+    "bundle_project",
     "stage_version",
     "generate_incremental",
     "plan_path",
@@ -44,16 +44,29 @@ def list_versions(project_root: str | Path) -> list[str]:
     return project.catalog.versions
 
 
+def bundle_project(project_root: str | Path, output_path: Path) -> Path:
+    """Bundle a project's staged migrations and pre/post SQL into a tar.zst artifact."""
+    project = load_project(project_root)
+    return build_artifact(project.config, output_path)
+
+
 def stage_version(
     project_root: str | Path,
     version: str,
     *,
     output_path: Path | None = None,
+    also_write: Path | None = None,
     overwrite: bool = True,
 ) -> Path:
     """Render and write `<prefix>--<version>.sql` from the project's sql/ tree."""
     config = load_config(project_root)
-    return write_staged_file(config, version, output_path=output_path, overwrite=overwrite)
+    return write_staged_file(
+        config,
+        version,
+        output_path=output_path,
+        also_write=also_write,
+        overwrite=overwrite,
+    )
 
 
 def generate_incremental(
@@ -63,6 +76,9 @@ def generate_incremental(
     to_version: str,
     base_url: str = "postgresql:///postgres",
     output_path: Path | None = None,
+    prepend_files: list[Path] | None = None,
+    append_files: list[Path] | None = None,
+    append_sql: list[str] | None = None,
 ) -> Path:
     """Generate `<prefix>--<from>--<to>.sql` by diffing two staged base files."""
     config = load_config(project_root)
@@ -72,6 +88,9 @@ def generate_incremental(
         to_version=to_version,
         base_url=base_url,
         output_path=output_path,
+        prepend_files=prepend_files,
+        append_files=append_files,
+        append_sql=append_sql,
     )
     assert res.path is not None
     return res.path
@@ -106,6 +125,7 @@ def apply_migrations(
     dbname: str | None = None,
     user: str | None = None,
     password: str | None = None,
+    version_source=None,
 ) -> ApplyResult:
     """Apply migrations to a live DB. Mirrors `pgpkg.migrate` but uses project source tree."""
     project = load_project(project_root)
@@ -121,6 +141,7 @@ def apply_migrations(
         dbname=dbname,
         user=user,
         password=password,
+        version_source=version_source,
     )
 
 
@@ -139,6 +160,7 @@ def migrate_from_artifact(
     dbname: str | None = None,
     user: str | None = None,
     password: str | None = None,
+    version_source=None,
 ) -> ApplyResult:
     """Apply migrations from a prebuilt tar.zst artifact (used by wrappers)."""
     artifact = load_artifact(Path(artifact_path))
@@ -155,6 +177,7 @@ def migrate_from_artifact(
         dbname=dbname,
         user=user,
         password=password,
+        version_source=version_source,
     )
 
 
@@ -171,8 +194,10 @@ def _migrate_with_catalog(
     dbname: str | None,
     user: str | None,
     password: str | None,
+    version_source,
 ) -> ApplyResult:
     pre_sql, post_sql = pre_post
+    resolved_version_source = resolve_version_source(config, override=version_source)
     with _conn.connect(
         conninfo,
         host=host,
@@ -183,7 +208,7 @@ def _migrate_with_catalog(
     ) as conn:
         # Need the live version BEFORE planning so we can build the right plan.
         # Use a tiny autocommit-friendly read inside the same connection (pre-txn).
-        live_version = _read_live_version_safe(conn, config)
+        live_version = _read_live_version_safe(conn, config, resolved_version_source)
         plan_obj = make_default_plan(catalog, live_version=live_version, target=target)
         return apply_plan(
             conn,
@@ -193,32 +218,22 @@ def _migrate_with_catalog(
             pre_sql=pre_sql,
             post_sql=post_sql,
             dry_run=dry_run,
+            version_source=resolved_version_source,
         )
 
 
-def _read_live_version_safe(conn, config: ProjectConfig) -> str | None:  # type: ignore[no-untyped-def]
+def _read_live_version_safe(  # type: ignore[no-untyped-def]
+    conn,
+    config: ProjectConfig,
+    version_source,
+) -> str | None:
     """Read current version without breaking the in-progress transaction."""
     # psycopg by default starts a txn on first execute. We rollback after the read
     # so the apply_plan transaction starts clean.
     try:
-        with conn.cursor() as cur:
-            cur.execute(
-                "SELECT to_regclass(%s)",
-                (f"{config.tracking_schema}.{config.tracking_table}",),
-            )
-            exists = cur.fetchone()[0]
-            if exists is None:
-                conn.rollback()
-                return None
-            cur.execute(
-                sql.SQL("SELECT version FROM {schema}.{table} ORDER BY id DESC LIMIT 1").format(
-                    schema=sql.Identifier(config.tracking_schema),
-                    table=sql.Identifier(config.tracking_table),
-                )
-            )
-            row = cur.fetchone()
-            conn.rollback()
-            return row[0] if row else None
+        live_version = version_source.read_live_version(conn, config)
+        conn.rollback()
+        return live_version
     except Exception:
         conn.rollback()
         raise
@@ -305,6 +320,9 @@ def _config_and_catalog_from_artifact(
         pre_dir=pre_dir,
         post_dir=post_dir,
         project_root=tmp_root,
+        version_source=artifact.manifest.version_source,
+        tracking_schema=artifact.manifest.tracking_schema,
+        tracking_table=artifact.manifest.tracking_table,
     )
     catalog = build_catalog(config)
     return config, catalog

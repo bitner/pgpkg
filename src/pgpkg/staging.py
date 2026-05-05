@@ -46,15 +46,23 @@ def write_staged_file(
     version: str,
     *,
     output_path: Path | None = None,
+    also_write: Path | None = None,
     overwrite: bool = True,
 ) -> Path:
     """Render and write the staged base file. Returns the path written."""
     body = render_staged_sql(config, version)
     target = output_path or (config.migrations_dir / base_filename(config.prefix, version))
-    target.parent.mkdir(parents=True, exist_ok=True)
-    if target.exists() and not overwrite:
-        raise LayoutError(f"{target} already exists and overwrite=False")
-    target.write_text(body, encoding="utf-8")
+    destinations = [path for path in dict.fromkeys([target, also_write]) if path is not None]
+    for path in destinations:
+        assert path is not None
+        path.parent.mkdir(parents=True, exist_ok=True)
+        if path.exists() and not overwrite:
+            raise LayoutError(f"{path} already exists and overwrite=False")
+
+    for path in destinations:
+        if path is None:
+            continue
+        path.write_text(body, encoding="utf-8")
     return target
 
 

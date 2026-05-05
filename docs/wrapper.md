@@ -3,8 +3,8 @@
 Shipping a database extension or application as a Python wheel means
 consumers can install and migrate without cloning the source tree:
 
-```
-pip install myext-migrator
+```bash
+uv tool install myext-migrator
 myext-migrator migrate -h db.example.com -d prod -U deploy
 ```
 
@@ -12,7 +12,7 @@ myext-migrator migrate -h db.example.com -d prod -U deploy
 
 ## Scaffold
 
-```
+```bash
 pgpkg wheel --output-dir ../myext-migrator
 ```
 
@@ -38,10 +38,10 @@ myext-migrator/
 
 ## Build and install
 
-```
+```bash
 cd myext-migrator
 uv build --out-dir dist
-pip install dist/myext_migrator-*.whl
+uv tool install ./dist/myext_migrator-*.whl
 ```
 
 ## Runtime dependency
@@ -60,11 +60,32 @@ The wrapper is apply-only:
 If you need those commands, use the base `pgpkg` CLI against the source
 tree instead.
 
+Projects that use `[tool.pgpkg].version_source` also need a custom wrapper.
+The generic `pgpkg wheel` scaffold intentionally rejects that case so the
+wrapper can pass `version_source=...` into `pgpkg.api.migrate_from_artifact(...)`
+explicitly.
+
+Minimal shape for a custom wrapper runtime:
+
+```python
+from pgpkg.api import migrate_from_artifact
+
+result = migrate_from_artifact(
+  artifact_path,
+  target=target,
+  conninfo=dsn,
+  version_source=MyVersionSource(),
+)
+```
+
+Use `pgpkg bundle --output ...` if you only need the artifact and do not want
+the generic scaffold.
+
 ## Bundle-only (no wrapper)
 
 If you just want the artifact file:
 
-```
+```bash
 pgpkg bundle --output myext.tar.zst
 ```
 

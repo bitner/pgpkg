@@ -47,3 +47,36 @@ def test_makemigration_empty_when_identical(staged_project: Path, pg_url: str):
         line for line in body.splitlines() if line.strip() and not line.strip().startswith("--")
     ).strip()
     assert non_comment == ""
+
+
+def test_makemigration_wraps_diff_with_files_and_sql(
+    staged_project: Path,
+    pg_url: str,
+    tmp_path: Path,
+):
+    from pgpkg.api import stage_version
+
+    (staged_project / "sql" / "030_newtable.sql").write_text(
+        "CREATE TABLE IF NOT EXISTS sampleext.extra (id int PRIMARY KEY);\n"
+    )
+    stage_version(staged_project, "unreleased")
+
+    prepend = tmp_path / "000_pre.sql"
+    prepend.write_text("SET search_path TO sampleext, public;\n")
+    append = tmp_path / "999_post.sql"
+    append.write_text("SELECT 42;\n")
+
+    path = generate_incremental(
+        staged_project,
+        from_version="0.2.0",
+        to_version="unreleased",
+        base_url=pg_url,
+        prepend_files=[prepend],
+        append_files=[append],
+        append_sql=["SELECT 'done';"],
+    )
+    body = path.read_text()
+    assert "SET search_path TO sampleext, public;" in body
+    assert '"sampleext"."extra"' in body
+    assert "SELECT 42;" in body
+    assert "SELECT 'done';" in body

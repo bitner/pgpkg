@@ -25,10 +25,22 @@ ordered `sql/` directory. `pgpkg` does everything else:
    `migrations/` plus `sql/pre/` and `sql/post/` for automation or custom
    packaging flows.
 
+## Prerequisites
+
+- **Python ≥ 3.11** and **uv**
+- **`pgpkg[diff]`** — the `makemigration` command requires the optional
+  [results](https://github.com/djrobstep/results) dependency:
+   `uv tool install --with 'pgpkg[diff]' pgpkg`
+- **Docker** — `makemigration` and `verify` spin up throwaway PostgreSQL
+  containers via `testcontainers`; Docker must be running
+- **libpq** — `migrate` connects to a live database using standard libpq
+  environment variables (`PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER`,
+  `PGPASSWORD`) or explicit `-h/-p/-d/-U/--dsn` flags
+
 ## Quickstart
 
 ```bash
-pip install 'pgpkg[diff]'
+uv tool install --with 'pgpkg[diff]' pgpkg
 
 mkdir -p sql/pre sql/post
 echo "CREATE TABLE foo (id int PRIMARY KEY);" > sql/010_schema.sql
@@ -50,7 +62,28 @@ pgpkg makemigration --from 0.1.0 --to 0.2.0
 pgpkg migrate -d mydb -h localhost --to 0.2.0
 ```
 
-See [docs/](docs/) for the full manual and design details.
+## Tracking and packaging
+
+By default, `pgpkg` records applied versions in `pgpkg.migrations`. You can
+relocate that table with:
+
+```toml
+[tool.pgpkg]
+project_name = "myext"
+
+[tool.pgpkg.tracking]
+schema = "ops"
+table = "schema_versions"
+```
+
+If your application already owns the authoritative version table, set
+`[tool.pgpkg].version_source = "module:attribute"` and provide an object with
+`read_live_version(...)` and `record_applied(...)` methods. The generic
+`pgpkg wheel` scaffold is intentionally limited to the default tracking path;
+custom version sources should use a project-specific wrapper that calls
+`pgpkg.api.migrate_from_artifact(..., version_source=...)`.
+
+See the full manual at https://bitner.github.io/pgpkg/ and the source docs in [docs/](docs/).
 
 ## Development
 

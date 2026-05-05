@@ -72,6 +72,11 @@ def build_parser() -> argparse.ArgumentParser:
     p_stage.add_argument("version", help="Version to stage (PEP 440 or 'unreleased')")
     p_stage.add_argument("--output", type=Path, help="Override output path")
     p_stage.add_argument(
+        "--also-write",
+        type=Path,
+        help="Write the same staged base file to a second path",
+    )
+    p_stage.add_argument(
         "--no-overwrite",
         action="store_true",
         help="Fail if the target file already exists",
@@ -88,6 +93,29 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_make.add_argument("--to", dest="to_version", help=f"Target version (default: '{UNRELEASED}')")
     p_make.add_argument("--output", type=Path, help="Override output path")
+    p_make.add_argument(
+        "--prepend-file",
+        dest="prepend_files",
+        action="append",
+        type=Path,
+        default=[],
+        help="SQL file to prepend before the generated diff (may be repeated)",
+    )
+    p_make.add_argument(
+        "--append-file",
+        dest="append_files",
+        action="append",
+        type=Path,
+        default=[],
+        help="SQL file to append after the generated diff (may be repeated)",
+    )
+    p_make.add_argument(
+        "--append-sql",
+        dest="append_sql",
+        action="append",
+        default=[],
+        help="Literal SQL to append after the generated diff (may be repeated)",
+    )
     p_make.add_argument(
         "--base-url",
         default="postgresql:///postgres",
@@ -132,7 +160,10 @@ def build_parser() -> argparse.ArgumentParser:
     )
     _project_root_arg(p_wheel)
     p_wheel.add_argument(
-        "--output-dir", type=Path, required=True, help="Where to write the wrapper project"
+        "--output-dir",
+        type=Path,
+        required=True,
+        help="Where to write the wrapper project",
     )
     p_wheel.add_argument(
         "--cli-name",
@@ -192,6 +223,9 @@ def _cmd_info(args: argparse.Namespace) -> int:
         "prefix": project.config.prefix,
         "sql_dir": str(project.config.sql_dir),
         "migrations_dir": str(project.config.migrations_dir),
+        "tracking_schema": project.config.tracking_schema,
+        "tracking_table": project.config.tracking_table,
+        "version_source": project.config.version_source,
         "versions": project.catalog.versions,
         "base_files": {v: str(p) for v, p in project.catalog.base_files.items()},
         "edges": [{"from": f, "to": t, "file": str(p)} for f, t, p in project.catalog.edges],
@@ -215,6 +249,7 @@ def _cmd_stageversion(args: argparse.Namespace) -> int:
         args.project_root,
         args.version,
         output_path=args.output,
+        also_write=args.also_write,
         overwrite=not args.no_overwrite,
     )
     print(f"wrote {path}")
@@ -239,6 +274,9 @@ def _cmd_makemigration(args: argparse.Namespace) -> int:
         to_version=to_v,
         base_url=args.base_url,
         output_path=args.output,
+        prepend_files=args.prepend_files,
+        append_files=args.append_files,
+        append_sql=args.append_sql,
     )
     print(f"wrote {path}")
     return 0
@@ -318,8 +356,7 @@ def _cmd_wheel(args: argparse.Namespace) -> int:
 
 
 def _cmd_bundle(args: argparse.Namespace) -> int:
-    project = api.load_project(args.project_root)
-    path = api.build_artifact(project.config, args.output)
+    path = api.bundle_project(args.project_root, args.output)
     print(f"wrote {path}")
     return 0
 

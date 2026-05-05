@@ -29,8 +29,8 @@ code. You own:
 ## Install
 
 ```bash
-pip install pgpkg           # core
-pip install 'pgpkg[diff]'   # + results, required for makemigration/verify
+uv tool install pgpkg                    # core
+uv tool install --with 'pgpkg[diff]' pgpkg   # + results for makemigration/verify
 ```
 
 ## Look around
