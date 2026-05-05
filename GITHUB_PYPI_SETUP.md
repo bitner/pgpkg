@@ -98,10 +98,10 @@ uv run python -m twine check dist/*
 uv run mkdocs build --strict
 ```
 
-2. Create a GitHub Release (tag) to trigger PyPI publish.
+2. Create GitHub Release tag `v0.1.0` to trigger PyPI publish.
 
 Optional manual path:
-- GitHub Actions -> `Publish` -> `Run workflow` -> `expected_version=<version>`
+- GitHub Actions -> `Publish` -> `Run workflow` -> `expected_version=0.1.0`
 
 3. Verify install from PyPI:
 

@@ -154,7 +154,7 @@ Session-recall setup:
 - [x] Create/refresh `CHANGELOG.md` with 0.1.0 release notes.
 - [x] Remove TestPyPI release lane until access is available.
   - Proof: `.github/workflows/publish-pypi.yml`, `CONTRIBUTING.md`, and `GITHUB_PYPI_SETUP.md` now describe a PyPI-only release path.
-- [ ] Create GitHub Release tag matching `src/pgpkg/__init__.py::__version__`.
+- [ ] Create GitHub Release tag `v0.1.0` matching `src/pgpkg/__init__.py::__version__`.
 - [ ] Publish to PyPI from the trusted publishing workflow.
 - [ ] Verify install from PyPI in a clean venv and run `pgpkg --help`.
 

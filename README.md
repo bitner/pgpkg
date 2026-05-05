@@ -83,7 +83,7 @@ If your application already owns the authoritative version table, set
 custom version sources should use a project-specific wrapper that calls
 `pgpkg.api.migrate_from_artifact(..., version_source=...)`.
 
-See [docs/](docs/) for the full manual and design details.
+See the full manual at https://bitner.github.io/pgpkg/ and the source docs in [docs/](docs/).
 
 ## Development
 

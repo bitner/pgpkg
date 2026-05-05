@@ -92,7 +92,7 @@ Cause:
 
 Fix:
 - Confirm `src/pgpkg/__init__.py::__version__`.
-- Re-tag release as `v<version>` to match built artifact.
+- Re-tag release as `v0.1.0` to match built artifact.
 
 ## Publish workflow fails with `invalid-publisher`
 

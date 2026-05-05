@@ -39,12 +39,12 @@ uv run python -m twine check dist/*
 uv run mkdocs build --strict
 ```
 
-3. Create release tag `vX.Y.Z` matching `src/pgpkg/__init__.py::__version__`.
+3. Create release tag `v0.1.0` matching `src/pgpkg/__init__.py::__version__`.
 
 4. Publish to PyPI by creating a GitHub Release from that tag.
 
 Optional manual path:
-- Run `Publish` with `expected_version=<version>` only if version parity is already confirmed.
+- Run `Publish` with `expected_version=0.1.0` only if version parity is already confirmed.
 
 5. Verify the PyPI install path in a clean venv:
 
