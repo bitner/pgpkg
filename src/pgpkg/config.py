@@ -20,6 +20,7 @@ class ProjectConfig:
     pre_dir: Path
     post_dir: Path
     project_root: Path
+    version_source: str | None = None
     tracking_schema: str = "pgpkg"
     tracking_table: str = "migrations"
 
@@ -29,7 +30,8 @@ def load_config(project_root: str | Path) -> ProjectConfig:
 
     Required keys: project_name (or fallback to [project].name).
     Optional keys: prefix (default = project_name), sql_dir (default 'sql'),
-    migrations_dir (default 'migrations'), tracking.schema, tracking.table.
+    migrations_dir (default 'migrations'), version_source, tracking.schema,
+    tracking.table.
     """
     root = Path(project_root).resolve()
     pyproject = root / "pyproject.toml"
@@ -59,6 +61,18 @@ def load_config(project_root: str | Path) -> ProjectConfig:
     pre_dir = sql_dir / "pre"
     post_dir = sql_dir / "post"
 
+    if "pre_post_in_base" in pgpkg_cfg:
+        raise ConfigError(
+            "[tool.pgpkg].pre_post_in_base is not supported in pgpkg 0.1.x. "
+            "Keep baked pre/post handling in project-specific staging or apply wrappers instead."
+        )
+
+    version_source = pgpkg_cfg.get("version_source")
+    if version_source is not None and (
+        not isinstance(version_source, str) or not version_source.strip()
+    ):
+        raise ConfigError("[tool.pgpkg].version_source must be a non-empty string.")
+
     tracking = pgpkg_cfg.get("tracking", {}) or {}
     tracking_schema = tracking.get("schema", "pgpkg")
     tracking_table = tracking.get("table", "migrations")
@@ -71,6 +85,7 @@ def load_config(project_root: str | Path) -> ProjectConfig:
         pre_dir=pre_dir,
         post_dir=post_dir,
         project_root=root,
+        version_source=version_source,
         tracking_schema=tracking_schema,
         tracking_table=tracking_table,
     )

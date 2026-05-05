@@ -40,6 +40,20 @@ def test_stageversion(sample_project: Path):
     assert (sample_project / "migrations" / "sampleext--0.1.0.sql").exists()
 
 
+def test_stageversion_also_write(sample_project: Path, tmp_path: Path):
+    extra = tmp_path / "sampleext.sql"
+    cp = _run(
+        "stageversion",
+        "0.1.0",
+        "--also-write",
+        str(extra),
+        "--project-root",
+        str(sample_project),
+    )
+    assert cp.returncode == 0, cp.stderr
+    assert extra.exists()
+
+
 def test_graph_text(staged_project: Path):
     cp = _run("graph", "--project-root", str(staged_project))
     assert cp.returncode == 0
@@ -88,3 +102,14 @@ def test_bundle_command(staged_project: Path, tmp_path: Path):
     cp = _run("bundle", "--output", str(out), "--project-root", str(staged_project))
     assert cp.returncode == 0, cp.stderr
     assert out.exists() and out.stat().st_size > 0
+
+
+def test_info_json_includes_runtime_flags(sample_project: Path):
+    cp = _run("info", "--json", "--project-root", str(sample_project))
+    assert cp.returncode == 0, cp.stderr
+    import json
+
+    data = json.loads(cp.stdout)
+    assert data["tracking_schema"] == "pgpkg"
+    assert data["tracking_table"] == "migrations"
+    assert data["version_source"] is None

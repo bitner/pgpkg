@@ -30,12 +30,18 @@ class ArtifactManifest:
     project_name: str
     prefix: str
     entries: list[ArtifactEntry]
+    tracking_schema: str = "pgpkg"
+    tracking_table: str = "migrations"
+    version_source: str | None = None
 
     def to_json(self) -> str:
         return json.dumps(
             {
                 "project_name": self.project_name,
                 "prefix": self.prefix,
+                "tracking_schema": self.tracking_schema,
+                "tracking_table": self.tracking_table,
+                "version_source": self.version_source,
                 "entries": [
                     {"name": e.name, "sha256": e.sha256, "size": e.size} for e in self.entries
                 ],
@@ -51,11 +57,14 @@ class ArtifactManifest:
             project_name=data["project_name"],
             prefix=data["prefix"],
             entries=[ArtifactEntry(**e) for e in data["entries"]],
+            tracking_schema=data.get("tracking_schema", "pgpkg"),
+            tracking_table=data.get("tracking_table", "migrations"),
+            version_source=data.get("version_source"),
         )
 
 
 def build_artifact(config: ProjectConfig, output_path: Path) -> Path:
-    """Bundle migrations/ + sql/pre + sql/post + a manifest into a tar.zst.
+    """Bundle migrations/ + sql/pre + sql/post + runtime config into a tar.zst.
 
     Layout inside the archive:
         MANIFEST.json
@@ -92,23 +101,34 @@ def build_artifact(config: ProjectConfig, output_path: Path) -> Path:
         project_name=config.project_name,
         prefix=config.prefix,
         entries=entries,
+        tracking_schema=config.tracking_schema,
+        tracking_table=config.tracking_table,
+        version_source=config.version_source,
     )
 
     tar_buf = io.BytesIO()
     with tarfile.open(fileobj=tar_buf, mode="w") as tar:
         manifest_bytes = manifest.to_json().encode("utf-8")
-        info = tarfile.TarInfo(name=MANIFEST_NAME)
-        info.size = len(manifest_bytes)
-        tar.addfile(info, io.BytesIO(manifest_bytes))
+        tar.addfile(_tar_info(MANIFEST_NAME, manifest_bytes), io.BytesIO(manifest_bytes))
         for name, data in files:
-            info = tarfile.TarInfo(name=name)
-            info.size = len(data)
-            tar.addfile(info, io.BytesIO(data))
+            tar.addfile(_tar_info(name, data), io.BytesIO(data))
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     cctx = zstd.ZstdCompressor(level=19)
     output_path.write_bytes(cctx.compress(tar_buf.getvalue()))
     return output_path
+
+
+def _tar_info(name: str, data: bytes) -> tarfile.TarInfo:
+    info = tarfile.TarInfo(name=name)
+    info.size = len(data)
+    info.mode = 0o644
+    info.mtime = 0
+    info.uid = 0
+    info.gid = 0
+    info.uname = ""
+    info.gname = ""
+    return info
 
 
 @dataclass(frozen=True)

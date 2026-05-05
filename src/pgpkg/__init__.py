@@ -2,6 +2,7 @@
 
 from .api import (
     apply_migrations,
+    bundle_project,
     generate_incremental,
     list_versions,
     load_project,
@@ -15,6 +16,7 @@ from .errors import PgpkgError
 __all__ = [
     "PgpkgError",
     "apply_migrations",
+    "bundle_project",
     "generate_incremental",
     "list_versions",
     "load_project",

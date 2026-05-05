@@ -25,6 +25,24 @@ def test_stage_version_writes_file(sample_project: Path):
     assert "Version: 0.1.0" in path.read_text()
 
 
+def test_stage_version_also_writes_second_copy(sample_project: Path, tmp_path: Path):
+    extra = tmp_path / "sampleext.sql"
+    path = stage_version(sample_project, "0.1.0", also_write=extra)
+    assert path.exists()
+    assert extra.exists()
+    assert extra.read_text() == path.read_text()
+
+
+def test_stage_version_also_write_preflights_all_targets(sample_project: Path, tmp_path: Path):
+    extra = tmp_path / "sampleext.sql"
+    extra.write_text("existing")
+
+    with pytest.raises(LayoutError):
+        stage_version(sample_project, "0.1.0", also_write=extra, overwrite=False)
+
+    assert not (sample_project / "migrations" / "sampleext--0.1.0.sql").exists()
+
+
 def test_no_sql_dir(tmp_path: Path):
     (tmp_path / "pyproject.toml").write_text('[tool.pgpkg]\nproject_name = "x"\n')
     with pytest.raises(LayoutError):

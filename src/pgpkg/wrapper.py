@@ -14,6 +14,7 @@ from pathlib import Path
 
 from .api import build_artifact
 from .config import load_project
+from .errors import PgpkgError
 
 _PYPROJECT_TMPL = """\
 [project]
@@ -126,6 +127,13 @@ def scaffold_wrapper(
     Returns the output_dir path.
     """
     project = load_project(project_root)
+    if project.config.version_source is not None:
+        raise PgpkgError(
+            "pgpkg wheel cannot scaffold a generic wrapper for projects using "
+            "[tool.pgpkg].version_source. Ship a custom wrapper package and call "
+            "pgpkg.api.migrate_from_artifact(..., version_source=...) explicitly.",
+            code="E_WRAP",
+        )
     output_dir = Path(output_dir).resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
 
