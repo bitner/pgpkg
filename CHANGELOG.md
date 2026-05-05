@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Publish workflow hardened with wheel install smoke test before publish.
 - Publish workflow now smoke-tests a generated wrapper package before uploading distributions.
 - Publish workflow checks release tag/version parity before PyPI publish.
+- Release workflow and setup docs now target PyPI only; TestPyPI setup is deferred until access is available.
 - Docs deployment workflow aligned to main-branch release path and updated Pages action versions.
 - Integration tests now support configurable PostgreSQL image for CI matrix validation.
 
@@ -30,6 +31,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Tracking writes now survive migration SQL that changes the active database role.
 
 ### Security
-- Trusted publishing workflow configured for TestPyPI/PyPI environments.
+- Trusted publishing workflow configured for the PyPI environment.
 
 [0.1.0]: https://github.com/bitner/pgpkg/releases/tag/v0.1.0

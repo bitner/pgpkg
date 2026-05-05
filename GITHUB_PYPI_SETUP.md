@@ -1,6 +1,6 @@
 # GitHub + PyPI Setup Guide
 
-This checklist takes a local `pgpkg` repository to a production-ready GitHub repository with automated TestPyPI/PyPI publishing.
+This checklist takes a local `pgpkg` repository to a production-ready GitHub repository with automated PyPI publishing.
 
 ## 1) Create and push the GitHub repository
 
@@ -34,17 +34,14 @@ git push -u origin <BRANCH>
 4. Enable Dependabot alerts and security updates.
 5. In Settings -> Pages, set Source to `GitHub Actions` so `.github/workflows/docs-pages.yml` can publish the MkDocs site.
 
-## 3) PyPI/TestPyPI account and project prerequisites
+## 3) PyPI account and project prerequisites
 
-You need accounts on both sites:
+You need an account on:
 - https://pypi.org
-- https://test.pypi.org
-
-Create or claim the same project name on TestPyPI first, then PyPI.
 
 ### Required access
 
-- You must be an Owner or Maintainer for the project on both services.
+- You must be an Owner or Maintainer for the project on PyPI.
 - You must have admin rights on the GitHub repository to configure environments and workflows.
 
 ## 4) Preferred publishing model: Trusted Publishing (OIDC)
@@ -54,22 +51,13 @@ This repository already includes `.github/workflows/publish-pypi.yml`, which is 
 ### 4a) Configure GitHub environments
 
 Create these environments in GitHub:
-- `testpypi`
 - `pypi`
 
 Optional hardening:
 - Add required reviewers for `pypi` environment
 - Restrict deployment branches/tags
 
-### 4b) Configure trusted publisher on TestPyPI
-
-In TestPyPI project settings, add a trusted publisher with:
-- Owner: `<OWNER>`
-- Repository: `pgpkg`
-- Workflow filename: `publish-pypi.yml`
-- Environment: `testpypi`
-
-### 4c) Configure trusted publisher on PyPI
+### 4b) Configure trusted publisher on PyPI
 
 In PyPI project settings, add a trusted publisher with:
 - Owner: `<OWNER>`
@@ -86,16 +74,15 @@ With trusted publishing configured correctly:
 
 You still need:
 - GitHub account with repo admin rights
-- PyPI/TestPyPI account with project owner/maintainer rights
+- PyPI account with project owner/maintainer rights
 
 ## 6) Optional fallback model: API token publishing
 
 Only use this if trusted publishing cannot be enabled.
 
-1. Create project-scoped API tokens in PyPI and TestPyPI.
+1. Create a project-scoped API token in PyPI.
 2. Add these repository secrets:
    - `PYPI_API_TOKEN`
-   - `TEST_PYPI_API_TOKEN`
 3. Update publish workflow to pass `password: ${{ secrets.<TOKEN_NAME> }}` to `pypa/gh-action-pypi-publish`.
 
 ## 7) First release flow
@@ -111,24 +98,26 @@ uv run python -m twine check dist/*
 uv run mkdocs build --strict
 ```
 
-2. Smoke publish to TestPyPI:
-   - GitHub Actions -> `Publish` -> `Run workflow` -> `repository=testpypi`
-3. Verify install from TestPyPI:
+2. Create a GitHub Release (tag) to trigger PyPI publish.
+
+Optional manual path:
+- GitHub Actions -> `Publish` -> `Run workflow` -> `expected_version=<version>`
+
+3. Verify install from PyPI:
 
 ```bash
 uv venv /tmp/pgpkg-smoke
-uv pip install --python /tmp/pgpkg-smoke/bin/python \
-   -i https://test.pypi.org/simple/ \
-   --extra-index-url https://pypi.org/simple \
-   pgpkg
+uv pip install --python /tmp/pgpkg-smoke/bin/python pgpkg
 /tmp/pgpkg-smoke/bin/pgpkg --help
 ```
 
 The `Publish` workflow's build job also smoke-tests a generated wrapper wheel,
-so a passing TestPyPI run confirms both the base CLI wheel and the wrapper
-packaging path.
+so a successful publish already validates both the base CLI wheel and the
+wrapper packaging path before upload.
 
-4. Create a GitHub Release (tag) to trigger production PyPI publish.
+TestPyPI is intentionally not wired up in this repository right now. If access
+is restored later, add a separate environment and publish job rather than
+reusing the PyPI lane implicitly.
 
 ## 8) Post-setup metadata cleanup
 
@@ -144,6 +133,6 @@ Issues = "https://github.com/<OWNER>/pgpkg/issues"
 
 ## 9) Quick troubleshooting
 
-- "invalid-publisher" or "publisher not trusted": trusted publisher fields do not exactly match repo/workflow/environment. For this repo, confirm `bitner/pgpkg`, workflow `publish-pypi.yml`, and environment `testpypi` or `pypi` exactly.
+- "invalid-publisher" or "publisher not trusted": trusted publisher fields do not exactly match repo/workflow/environment. For this repo, confirm `bitner/pgpkg`, workflow `publish-pypi.yml`, and environment `pypi` exactly.
 - Publish job not starting: verify environment name in workflow matches configured environment.
 - Artifact missing in publish job: ensure build job used `uv build --out-dir dist` and uploaded `dist/*`.

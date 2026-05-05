@@ -4,8 +4,9 @@ from pathlib import Path
 from types import SimpleNamespace
 from typing import cast
 
-import pytest
 import psycopg
+import pytest
+
 from pgpkg.config import ProjectConfig
 from pgpkg.errors import ConfigError
 from pgpkg.tracking import DefaultVersionSource, resolve_version_source
@@ -51,9 +52,7 @@ def test_resolve_version_source_imports_class(monkeypatch: pytest.MonkeyPatch):
         return fake_module
 
     monkeypatch.setattr("pgpkg.tracking.import_module", fake_import_module)
-    resolved = resolve_version_source(
-        _config(version_source="demo.module:CustomSource")
-    )
+    resolved = resolve_version_source(_config(version_source="demo.module:CustomSource"))
     assert isinstance(resolved, _DummyVersionSource)
 
 
@@ -83,10 +82,7 @@ def test_resolve_version_source_imports_relative_to_project_root(tmp_path: Path)
 
     resolved = resolve_version_source(config)
 
-    assert (
-        resolved.read_live_version(cast(psycopg.Connection, object()), config)
-        == "1.2.3"
-    )
+    assert resolved.read_live_version(cast(psycopg.Connection, object()), config) == "1.2.3"
 
 
 def test_resolve_version_source_rejects_missing_methods(

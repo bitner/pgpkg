@@ -2,7 +2,7 @@
 
 Last updated: 2026-05-05
 Owner: core maintainers
-Status: Local release gate, docs refresh, and generated-wrapper smoke pass on docs/v0.1.0-release-prep; remaining external blocker is TestPyPI trusted-publisher configuration
+Status: Local release gate, docs refresh, and generated-wrapper smoke pass on docs/v0.1.0-release-prep; release path now targets PyPI only while TestPyPI access is unavailable
 
 ## 1) Mission
 
@@ -85,8 +85,8 @@ Docs exist:
 
 Current branch state:
 - Branch: `docs/v0.1.0-release-prep`
-- Divergence from `main`: ahead 2, behind 0 (`git rev-list --left-right --count main...HEAD` -> `0 2`)
-- Working tree: clean (`git status --short --branch`)
+- Divergence from `main`: ahead 5, behind 0 (`git rev-list --left-right --count main...HEAD` -> `0 5`)
+- Working tree: local workflow/docs edits pending commit for the PyPI-only release path
 - Remote tracking: none configured locally (`git branch -vv`)
 - Branch-only files vs `main`: `.gitignore`, `CHANGELOG.md`, `README.md`, `docs/troubleshooting.md`
 
@@ -101,7 +101,7 @@ Core implementation:
 
 Quality and validation:
 - [x] Unit and integration test suites implemented.
-- [x] Local validation passes: `63 passed` on latest run.
+- [x] Local validation passes: `85 passed` on latest run.
 - [x] Packaging checks pass: wheel/sdist build + `twine check`.
 - [x] Docs strict build passes (`mkdocs build --strict`).
 - [x] Branch-local packaging/docs checks rerun after post-`main` docs changes.
@@ -152,16 +152,11 @@ Session-recall setup:
 - [x] Re-ran the local release gate after runtime-config/docs refresh on this branch.
   - Proof: `uv run pre-commit run --all-files`, `uv run ty check src tests`, `uv run pytest -q`, `uv build --out-dir dist`, `uv run python -m twine check dist/*`, and `uv run mkdocs build --strict` all passed on 2026-05-05.
 - [x] Create/refresh `CHANGELOG.md` with 0.1.0 release notes.
-- [-] Execute TestPyPI publish dry run via workflow_dispatch.
-  - Progress: workflow dispatched and build stage passes.
-  - Blocker: trusted publishing exchange fails with `invalid-publisher` for environment `testpypi`.
-  - Required user action: configure TestPyPI trusted publisher to match:
-    - repository: `bitner/pgpkg`
-    - workflow: `.github/workflows/publish-pypi.yml`
-    - ref: `refs/heads/main`
-    - environment: `testpypi`
-- [ ] Verify install from TestPyPI in clean venv and run `pgpkg --help`.
-- [ ] If dry run passes, create GitHub Release tag matching `src/pgpkg/__init__.py::__version__`.
+- [x] Remove TestPyPI release lane until access is available.
+  - Proof: `.github/workflows/publish-pypi.yml`, `CONTRIBUTING.md`, and `GITHUB_PYPI_SETUP.md` now describe a PyPI-only release path.
+- [ ] Create GitHub Release tag matching `src/pgpkg/__init__.py::__version__`.
+- [ ] Publish to PyPI from the trusted publishing workflow.
+- [ ] Verify install from PyPI in a clean venv and run `pgpkg --help`.
 
 ### D. Session-recall optimization
 - [-] For the next 5-10 real work sessions, prepend baseline recall commands and ensure actual file edits happen in those sessions.
@@ -178,7 +173,7 @@ Session-recall setup:
 - [x] Add PostgreSQL version matrix (14-17) for integration tests.
   - Proof: `ci.yml` integration job now uses `postgres:14/15/16/17-alpine` matrix with `PGPKG_TEST_POSTGRES_IMAGE`.
 - [x] Add release process doc section for version bump + release/tag policy.
-  - Proof: `CONTRIBUTING.md` release section updated with explicit version/tag parity and TestPyPI verification path.
+  - Proof: `CONTRIBUTING.md` release section updated with explicit version/tag parity and a PyPI-only publish path.
 - [x] Add troubleshooting section for top migration/connectivity failure modes.
   - Proof: new `docs/troubleshooting.md` added and included in `mkdocs.yml` nav.
 
@@ -189,7 +184,7 @@ All must be true:
   - Progress: latest full gate passed locally on 2026-05-05, including `pre-commit`, `ty`, `pytest`, `uv build`, `twine check`, strict MkDocs, and generated-wrapper smoke; branch-specific remote CI has not run because this branch has no upstream.
 - [x] Second-model review findings are triaged and merged into this plan.
   - Proof: accepted and rejected findings are recorded in section 7A and summarized in the 2026-04-27 session log.
-- [ ] TestPyPI publish + install smoke test verified.
+- [ ] PyPI install smoke verified.
 - [ ] GitHub Release tag equals package version.
 - [ ] PyPI publish succeeds from trusted publishing workflow.
 - [-] Session-recall baseline commands are part of team runbook and this plan-update loop is being followed.
@@ -205,6 +200,7 @@ All must be true:
 - [2026-04-27] Committed and pushed release hardening updates; remote CI+Docs runs are green on latest main; TestPyPI publish run failed at trusted publisher exchange (`invalid-publisher`) and requires account-level publisher config update.
 - [2026-04-27] Baseline recall rerun on `docs/v0.1.0-release-prep`: repo sessions increased to 22 but file recall remains empty; current branch is clean, 2 commits ahead of `main`, has no upstream, and branch-local `uv build`, `twine check`, and strict MkDocs validation all pass.
 - [2026-05-05] Baseline recall rerun for this session; docs were synced with runtime tracking/version-source behavior, the full local release gate passed (`85 passed`), and generated-wrapper smoke succeeded against the built `pgpkg` wheel.
+- [2026-05-05] Removed the TestPyPI lane from workflow/docs because access is unavailable; release guidance now targets PyPI only.
 
 ## 10) Update Template (Copy For Each Future Session)
 

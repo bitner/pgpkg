@@ -39,28 +39,25 @@ uv run python -m twine check dist/*
 uv run mkdocs build --strict
 ```
 
-3. For a smoke release, run the `Publish` workflow manually with `repository=testpypi`.
+3. Create release tag `vX.Y.Z` matching `src/pgpkg/__init__.py::__version__`.
 
-4. Verify TestPyPI install path in a clean venv:
+4. Publish to PyPI by creating a GitHub Release from that tag.
+
+Optional manual path:
+- Run `Publish` with `expected_version=<version>` only if version parity is already confirmed.
+
+5. Verify the PyPI install path in a clean venv:
 
 ```bash
-uv venv .venv-testpypi
-uv pip install --python .venv-testpypi/bin/python \
-	-i https://test.pypi.org/simple/ \
-	--extra-index-url https://pypi.org/simple \
-	pgpkg
-.venv-testpypi/bin/pgpkg --help
+uv venv .venv-pypi
+uv pip install --python .venv-pypi/bin/python pgpkg
+.venv-pypi/bin/pgpkg --help
 ```
-
-5. Create release tag `vX.Y.Z` matching `src/pgpkg/__init__.py::__version__`.
-
-6. Publish to PyPI by creating a GitHub Release from that tag (or by running `Publish` with `repository=pypi` only if version parity is confirmed).
 
 ## Trusted publishing setup
 
-Before the publish workflow can work, configure trusted publishing for both environments:
+Before the publish workflow can work, configure trusted publishing for the PyPI environment:
 
-- GitHub environment `testpypi` bound to the TestPyPI project
 - GitHub environment `pypi` bound to the PyPI project
 
 No API tokens are required when trusted publishing is configured correctly.
@@ -68,5 +65,5 @@ No API tokens are required when trusted publishing is configured correctly.
 ## Release policy guardrails
 
 - The release tag version must match the built package version exactly.
-- TestPyPI install smoke test is required before first PyPI publish.
+- The publish build job smoke-tests both the CLI wheel and a generated wrapper before upload.
 - If workflow_dispatch is used for PyPI publish, confirm version parity before running it.

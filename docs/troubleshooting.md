@@ -97,14 +97,15 @@ Fix:
 ## Publish workflow fails with `invalid-publisher`
 
 Symptom:
-- The `Publish` workflow reaches the PyPI/TestPyPI publish step, then fails
+
+- The `Publish` workflow reaches the PyPI publish step, then fails
 	during trusted-publisher exchange.
 
 Checks:
 - Verify the trusted publisher is configured for repository `bitner/pgpkg`.
 - Verify the workflow filename matches `publish-pypi.yml`.
-- Verify the environment name matches `testpypi` or `pypi` exactly.
+- Verify the environment name matches `pypi` exactly.
 
 Fix:
-- Update the trusted publisher entry in PyPI/TestPyPI so the repository,
+- Update the trusted publisher entry in PyPI so the repository,
 	workflow, and environment fields exactly match the GitHub workflow.
