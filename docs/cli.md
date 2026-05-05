@@ -3,7 +3,7 @@
 `pgpkg` uses argparse and accepts `--help` (the `-h` short flag is reserved
 for `--host`, matching `psql`).
 
-```
+```text
 pgpkg [--help] <command> [options]
 
 Commands:
@@ -41,12 +41,18 @@ vars take over.
 
 ## `stageversion`
 
-```
-pgpkg stageversion <version> [--output PATH] [--no-overwrite]
+```text
+pgpkg stageversion <version> [--output PATH] [--also-write PATH] [--no-overwrite]
 ```
 
 Renders `sql/` into a single `<prefix>--<version>.sql`. Ignores `sql/pre/`
 and `sql/post/` (they run at apply time).
+
+- `--output` overrides the default path under `migrations/`.
+- `--also-write` writes the same rendered base file to a second location,
+  which is useful for review artifacts or custom packaging flows.
+- `--no-overwrite` preflights every destination and fails before writing if
+  any target already exists.
 
 ## `info`
 
@@ -55,7 +61,8 @@ pgpkg info [--json]
 ```
 
 Prints resolved project metadata including the inferred prefix, SQL and
-migrations directories, known versions, base files, and graph edges.
+migrations directories, tracking schema/table, configured `version_source`,
+known versions, base files, and graph edges.
 
 ## `versions`
 
@@ -67,8 +74,10 @@ Prints known versions in sorted order, including `unreleased` when present.
 
 ## `makemigration`
 
-```
+```text
 pgpkg makemigration [--from VERSION] [--to VERSION] [--base-url URL] [--output PATH]
+                   [--prepend-file PATH]... [--append-file PATH]...
+                   [--append-sql SQL]...
 ```
 
 Writes `<prefix>--<from>--<to>.sql`. `--base-url` is the postgres URL used
@@ -76,9 +85,16 @@ to spawn tempdbs via `results.temporary_local_db`. Defaults to
 `postgresql:///postgres`, i.e. a local admin connection through the peer
 socket.
 
+When wrapper SQL is supplied, `pgpkg` renders the output in this order:
+
+1. Every `--prepend-file`.
+2. The generated schema diff.
+3. Every `--append-file`.
+4. Every `--append-sql` literal.
+
 ## `graph`
 
-```
+```text
 pgpkg graph [--format text|dot]
 ```
 
@@ -86,7 +102,7 @@ Shows the version graph either as plain text or Graphviz DOT.
 
 ## `plan`
 
-```
+```text
 pgpkg plan [--source VERSION] [--to VERSION]
 ```
 
@@ -95,16 +111,18 @@ a fresh install and may start with a bootstrap base file.
 
 ## `migrate`
 
-```
+```text
 pgpkg migrate [--to VERSION] [--dry-run] <db-flags>
 ```
 
 Runs inside one transaction with `pg_advisory_xact_lock`. `--dry-run`
-executes the same SQL inside a transaction, then rolls back.
+executes the same SQL inside a transaction, then rolls back. The live source
+version comes from the configured version source, which defaults to
+`pgpkg.migrations`.
 
 ## `verify`
 
-```
+```text
 pgpkg verify [--base-url URL]
 ```
 
@@ -113,18 +131,23 @@ that applying `a -> b` produces the same resulting schema as loading base `b`.
 
 ## `wheel`
 
-```
+```text
 pgpkg wheel --output-dir PATH [--cli-name NAME]
 ```
 
-Scaffolds a wrapper Python project. See [Wrapping into a wheel](wrapper.md).
+Scaffolds a wrapper Python project. Projects using
+`[tool.pgpkg].version_source` must ship a custom wrapper instead; the generic
+scaffold rejects that configuration so the wrapper can pass an explicit
+`version_source=...` object at runtime. See [Wrapping into a wheel](wrapper.md).
 
 ## `bundle`
 
-```
+```text
 pgpkg bundle --output PATH
 ```
 
 Writes a compressed `tar.zst` artifact containing `migrations/`, `sql/pre/`,
-and `sql/post/`. This is useful for automation or for shipping migration
-artifacts separately from a full wrapper project.
+and `sql/post/`. The manifest also records the resolved tracking schema,
+tracking table, and configured `version_source` string so artifact-based
+execution keeps the same runtime defaults. This is useful for automation or
+for shipping migration artifacts separately from a full wrapper project.

@@ -44,11 +44,12 @@ uv run mkdocs build --strict
 4. Verify TestPyPI install path in a clean venv:
 
 ```bash
-python -m venv .venv-testpypi
-. .venv-testpypi/bin/activate
-python -m pip install --upgrade pip
-python -m pip install -i https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple pgpkg
-pgpkg --help
+uv venv .venv-testpypi
+uv pip install --python .venv-testpypi/bin/python \
+	-i https://test.pypi.org/simple/ \
+	--extra-index-url https://pypi.org/simple \
+	pgpkg
+.venv-testpypi/bin/pgpkg --help
 ```
 
 5. Create release tag `vX.Y.Z` matching `src/pgpkg/__init__.py::__version__`.

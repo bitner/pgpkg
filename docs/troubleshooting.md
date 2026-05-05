@@ -44,10 +44,43 @@ Symptom:
 Fix:
 
 ```bash
-pip install 'pgpkg[diff]'
+uv tool install --with 'pgpkg[diff]' pgpkg
 # or in this repo
 uv sync --extra diff
 ```
+
+## `version_source` import or validation fails
+
+Symptom:
+- `pgpkg migrate` exits with a config error about `module:attribute` syntax,
+	import failure, or missing required callables.
+
+Checks:
+
+```bash
+pgpkg info --json
+python -c "import mymodule; print(mymodule)"
+```
+
+Fix:
+- Set `[tool.pgpkg].version_source` to `module:attribute`.
+- Ensure the module is importable from the project root or installed in the
+	runtime environment.
+- Implement both `read_live_version(...)` and `record_applied(...)`.
+
+## `pgpkg wheel` rejects projects using `version_source`
+
+Symptom:
+- Wrapper scaffolding exits with `error [E_WRAP]` mentioning `version_source`.
+
+Cause:
+- Generic wrappers cannot construct your project-specific runtime object.
+
+Fix:
+- Use `pgpkg bundle --output ...` or `pgpkg.api.bundle_project(...)` to build
+	the artifact.
+- Ship a custom wrapper package that calls
+	`pgpkg.api.migrate_from_artifact(..., version_source=...)`.
 
 ## Release workflow version mismatch
 
@@ -60,3 +93,18 @@ Cause:
 Fix:
 - Confirm `src/pgpkg/__init__.py::__version__`.
 - Re-tag release as `v<version>` to match built artifact.
+
+## Publish workflow fails with `invalid-publisher`
+
+Symptom:
+- The `Publish` workflow reaches the PyPI/TestPyPI publish step, then fails
+	during trusted-publisher exchange.
+
+Checks:
+- Verify the trusted publisher is configured for repository `bitner/pgpkg`.
+- Verify the workflow filename matches `publish-pypi.yml`.
+- Verify the environment name matches `testpypi` or `pypi` exactly.
+
+Fix:
+- Update the trusted publisher entry in PyPI/TestPyPI so the repository,
+	workflow, and environment fields exactly match the GitHub workflow.

@@ -2,6 +2,12 @@
 
 Start from any project that has a `pyproject.toml`.
 
+## 0. Install pgpkg
+
+```bash
+uv tool install --with 'pgpkg[diff]' pgpkg
+```
+
 ## 1. Declare your project
 
 ```toml
@@ -31,7 +37,7 @@ sql/
 
 ## 3. Stage a version
 
-```
+```bash
 pgpkg stageversion 0.1.0
 ```
 
@@ -39,7 +45,7 @@ This writes `migrations/myext--0.1.0.sql`. Never edit that file by hand.
 
 ## 4. Keep editing `sql/`, then generate an incremental
 
-```
+```bash
 pgpkg stageversion 0.2.0
 pgpkg makemigration --from 0.1.0 --to 0.2.0
 ```
@@ -52,7 +58,7 @@ Review the diff. Edit freely; `pgpkg verify` will round-trip-check it later.
 
 ## 5. Apply to a live DB
 
-```
+```bash
 pgpkg migrate -h localhost -d mydb -U myuser --to 0.2.0
 ```
 
@@ -61,7 +67,7 @@ Standard libpq environment variables (`PGHOST`, `PGPORT`, `PGDATABASE`,
 
 ## 6. Verify
 
-```
+```bash
 pgpkg verify
 ```
 
@@ -71,7 +77,7 @@ loading `base(b)` directly.
 
 ## 7. Ship
 
-```
+```bash
 pgpkg wheel --output-dir ../myext-migrator
 cd ../myext-migrator && uv build --out-dir dist
 ```
