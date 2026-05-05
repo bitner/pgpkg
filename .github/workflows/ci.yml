@@ -39,6 +39,7 @@ jobs:
 
   unit:
     runs-on: ubuntu-latest
+    name: unit (${{ matrix.python-version }})
     strategy:
       fail-fast: false
       matrix:
@@ -63,8 +64,9 @@ jobs:
       - name: Run unit tests
         run: uv run pytest tests/unit -q
 
-  integration-build-docs:
+  integration:
     runs-on: ubuntu-latest
+    name: integration (${{ matrix.postgres-image }})
     strategy:
       fail-fast: false
       matrix:
@@ -90,6 +92,29 @@ jobs:
         env:
           PGPKG_TEST_POSTGRES_IMAGE: ${{ matrix.postgres-image }}
         run: uv run pytest tests/integration -q
+
+  build-docs:
+    runs-on: ubuntu-latest
+    needs:
+      - quality
+      - unit
+      - integration
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --extra dev --extra diff
 
       - name: Build distributions
         run: uv build --out-dir dist

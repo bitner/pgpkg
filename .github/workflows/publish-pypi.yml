@@ -49,9 +49,25 @@ jobs:
 
       - name: Smoke test wheel install
         run: |
+          set -euo pipefail
           uv venv .venv-smoke
           uv pip install --python .venv-smoke/bin/python dist/*.whl
           .venv-smoke/bin/pgpkg --help
+
+      - name: Smoke test generated wrapper
+        run: |
+          set -euo pipefail
+          smoke_python="$PWD/.venv-smoke/bin/python"
+          smoke_wrapper="$PWD/.venv-smoke/bin/sampleext-migrator"
+          tmpdir="$(mktemp -d)"
+          cp -R tests/fixtures/sample_project/. "$tmpdir/"
+          uv run pgpkg stageversion 0.1.0 --project-root "$tmpdir"
+          uv run pgpkg wheel --project-root "$tmpdir" --output-dir "$tmpdir/wrapper"
+          pushd "$tmpdir/wrapper"
+          uv build --out-dir dist
+          uv pip install --python "$smoke_python" dist/*.whl
+          "$smoke_wrapper" info
+          popd
 
       - name: Upload distributions
         uses: actions/upload-artifact@v4
