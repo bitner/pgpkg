@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from pathlib import Path
-import re
 from typing import Any
 
 from .config import ProjectConfig
@@ -134,9 +134,7 @@ def _load_routine_signatures(db: Any, schema: str) -> set[tuple[str, str]]:
     }
 
 
-def _strip_unsafe_routine_drops(
-    diff_sql: str, target_signatures: set[tuple[str, str]]
-) -> str:
+def _strip_unsafe_routine_drops(diff_sql: str, target_signatures: set[tuple[str, str]]) -> str:
     """Remove DROP FUNCTION/PROCEDURE statements for routines still in target.
 
     Some diffs emit a DROP for a routine that is still present in the target

@@ -91,9 +91,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_make.add_argument(
         "--from", dest="from_version", help="Source version (default: highest released)"
     )
-    p_make.add_argument(
-        "--to", dest="to_version", help=f"Target version (default: '{UNRELEASED}')"
-    )
+    p_make.add_argument("--to", dest="to_version", help=f"Target version (default: '{UNRELEASED}')")
     p_make.add_argument("--output", type=Path, help="Override output path")
     p_make.add_argument(
         "--prepend-file",
@@ -145,9 +143,7 @@ def build_parser() -> argparse.ArgumentParser:
     _project_root_arg(p_mig)
     _add_db_args(p_mig)
     p_mig.add_argument("--to", dest="target", help="Target version (default: highest)")
-    p_mig.add_argument(
-        "--dry-run", action="store_true", help="Run inside a rolled-back txn"
-    )
+    p_mig.add_argument("--dry-run", action="store_true", help="Run inside a rolled-back txn")
 
     # verify
     p_ver = sub.add_parser(
@@ -232,9 +228,7 @@ def _cmd_info(args: argparse.Namespace) -> int:
         "version_source": project.config.version_source,
         "versions": project.catalog.versions,
         "base_files": {v: str(p) for v, p in project.catalog.base_files.items()},
-        "edges": [
-            {"from": f, "to": t, "file": str(p)} for f, t, p in project.catalog.edges
-        ],
+        "edges": [{"from": f, "to": t, "file": str(p)} for f, t, p in project.catalog.edges],
     }
     if args.json:
         print(json.dumps(info, indent=2))

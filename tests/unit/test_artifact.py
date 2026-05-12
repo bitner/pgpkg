@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+
 from pgpkg.api import bundle_project, stage_version
 from pgpkg.artifact import build_artifact, load_artifact
 from pgpkg.config import load_config
@@ -31,9 +32,7 @@ def test_build_and_load_artifact(sample_project: Path, tmp_path: Path):
     assert "-- post" in loaded.post_sql()
 
 
-def test_artifact_integrity_check_fails_on_corruption(
-    sample_project: Path, tmp_path: Path
-):
+def test_artifact_integrity_check_fails_on_corruption(sample_project: Path, tmp_path: Path):
     stage_version(sample_project, "0.1.0")
     out = tmp_path / "art.tar.zst"
     build_artifact(load_config(sample_project), out)
@@ -63,9 +62,7 @@ def test_bundle_project_uses_project_root(sample_project: Path, tmp_path: Path):
     assert "migrations/sampleext--0.1.0.sql" in loaded.migrations_files()
 
 
-def test_artifact_manifest_preserves_runtime_config(
-    sample_project: Path, tmp_path: Path
-):
+def test_artifact_manifest_preserves_runtime_config(sample_project: Path, tmp_path: Path):
     (sample_project / "pyproject.toml").write_text(
         "\n".join(
             [

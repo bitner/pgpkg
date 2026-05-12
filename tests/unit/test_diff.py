@@ -8,7 +8,7 @@ def test_strip_unsafe_routine_drops_keeps_needed_drop() -> None:
         [
             'drop function if exists "sampleext"."f"(integer);',
             'drop function if exists "sampleext"."g"(text);',
-            'create table sampleext.t(id int);',
+            "create table sampleext.t(id int);",
         ]
     )
 
@@ -18,7 +18,7 @@ def test_strip_unsafe_routine_drops_keeps_needed_drop() -> None:
 
     assert 'drop function if exists "sampleext"."f"(integer);' not in out
     assert 'drop function if exists "sampleext"."g"(text);' in out
-    assert 'create table sampleext.t(id int);' in out
+    assert "create table sampleext.t(id int);" in out
 
 
 def test_strip_unsafe_routine_drops_keeps_drop_when_kind_changes() -> None:

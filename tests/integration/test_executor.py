@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+
 from pgpkg._conn import connect
 from pgpkg.api import (
     apply_migrations,
@@ -29,9 +30,7 @@ class ProjectVersionSource:
             row = cur.fetchone()
             if row is None or row[0] is None:
                 return None
-            cur.execute(
-                "SELECT version FROM sampleext.project_migrations ORDER BY id DESC LIMIT 1"
-            )
+            cur.execute("SELECT version FROM sampleext.project_migrations ORDER BY id DESC LIMIT 1")
             version_row = cur.fetchone()
             return version_row[0] if version_row else None
 
@@ -84,9 +83,7 @@ class ValidatingProjectVersionSource:
             row = cur.fetchone()
             if row is None or row[0] is None:
                 return None
-            cur.execute(
-                "SELECT version FROM sampleext.project_migrations ORDER BY id DESC LIMIT 1"
-            )
+            cur.execute("SELECT version FROM sampleext.project_migrations ORDER BY id DESC LIMIT 1")
             version_row = cur.fetchone()
             return version_row[0] if version_row else None
 

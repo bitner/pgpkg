@@ -85,9 +85,7 @@ def current_tracking_version(
         if exists is None:
             return None
         cur.execute(
-            sql.SQL(
-                "SELECT version FROM {schema}.{table} ORDER BY id DESC LIMIT 1"
-            ).format(
+            sql.SQL("SELECT version FROM {schema}.{table} ORDER BY id DESC LIMIT 1").format(
                 schema=sql.Identifier(schema),
                 table=sql.Identifier(table),
             )
@@ -211,9 +209,7 @@ def resolve_version_source(
 
     module_name, sep, attr_name = config.version_source.partition(":")
     if not sep or not module_name or not attr_name:
-        raise ConfigError(
-            "[tool.pgpkg].version_source must use 'module:attribute' syntax."
-        )
+        raise ConfigError("[tool.pgpkg].version_source must use 'module:attribute' syntax.")
 
     try:
         with _project_import_path(config.project_root):

@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+
 from pgpkg.config import load_config, load_project
 from pgpkg.errors import ConfigError
 
@@ -31,9 +32,7 @@ def test_missing_pgpkg_section(tmp_path: Path):
 
 
 def test_project_name_fallback_to_project(tmp_path: Path):
-    (tmp_path / "pyproject.toml").write_text(
-        '[project]\nname = "fallback"\n[tool.pgpkg]\n'
-    )
+    (tmp_path / "pyproject.toml").write_text('[project]\nname = "fallback"\n[tool.pgpkg]\n')
     c = load_config(tmp_path)
     assert c.project_name == "fallback"
     assert c.prefix == "fallback"
