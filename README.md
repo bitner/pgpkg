@@ -9,7 +9,8 @@ ordered `sql/` directory. `pgpkg` does everything else:
    `<prefix>--<version>.sql`.
 2. **`makemigration`** — diffs two staged versions with
    [results](https://github.com/djrobstep/results) to generate an incremental
-   migration `<prefix>--A--B.sql`.
+   migration `<prefix>--A--B.sql`, including body-only function/procedure
+   changes that require `CREATE OR REPLACE`.
 3. **`graph`** — shows the version graph and shortest paths between versions.
 4. **`migrate`** — connects to a live database (libpq env vars or psql-style
    flags), reads the currently installed version, and applies the shortest

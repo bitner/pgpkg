@@ -15,7 +15,9 @@ code. You own:
 
 - **stageversion** — renders `sql/` into `<prefix>--<version>.sql`
 - **makemigration** — diffs two staged versions into `<prefix>--<from>--<to>.sql`
-  using `results.temporary_local_db` + `results.schemadiff_as_sql`
+  using `results.temporary_local_db` + `results.schemadiff_as_sql`, with an
+  extra routine-definition pass so body-only function/procedure changes are
+  emitted as `CREATE OR REPLACE`
 - **graph** / **plan** — show the version graph and the shortest path to a
   target version
 - **migrate** — apply the plan inside one transaction with an advisory lock,

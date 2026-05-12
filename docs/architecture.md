@@ -10,7 +10,7 @@ A short tour of the modules:
 | `pgpkg.staging` | render `sql/` into a single string with fragment markers |
 | `pgpkg.versioning` | PEP 440 + `unreleased`-last ordering |
 | `pgpkg.planner` | BFS over the catalog graph for shortest `source → target` paths |
-| `pgpkg.diff` | wrap `results.temporary_local_db` + `schemadiff_as_sql` |
+| `pgpkg.diff` | wrap `results.temporary_local_db` + `schemadiff_as_sql`, then patch in body-only routine replacements and safe routine-drop filtering |
 | `pgpkg.tracking` | default tracking DDL, version-source protocol, role-safe bookkeeping |
 | `pgpkg.executor` | run a plan in one xact with `pg_advisory_xact_lock` |
 | `pgpkg._conn` | thin psycopg helper honoring libpq env vars |

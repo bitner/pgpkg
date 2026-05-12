@@ -83,7 +83,9 @@ pgpkg makemigration [--from VERSION] [--to VERSION] [--base-url URL] [--output P
 Writes `<prefix>--<from>--<to>.sql`. `--base-url` is the postgres URL used
 to spawn tempdbs via `results.temporary_local_db`. Defaults to
 `postgresql:///postgres`, i.e. a local admin connection through the peer
-socket.
+socket. When the raw schema diff misses body-only function or procedure
+changes, `pgpkg` appends `CREATE OR REPLACE` definitions from the target
+version and avoids unsafe same-kind routine drops.
 
 When wrapper SQL is supplied, `pgpkg` renders the output in this order:
 

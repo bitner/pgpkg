@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 from .config import ProjectConfig
 from .errors import PgpkgError
@@ -53,7 +55,129 @@ def generate_incremental_sql(
         with db_to.t() as t:
             t.execute(to_sql)
         diff_sql: str = db_from.schemadiff_as_sql(db_to)
+        target_routine_sigs = _load_routine_signatures(db_to, config.prefix)
+        diff_sql = _strip_unsafe_routine_drops(diff_sql, target_routine_sigs)
+        routine_diff_sql = _changed_routine_replacements_sql(db_from, db_to, config.prefix)
+
+    if routine_diff_sql.strip():
+        if diff_sql.strip():
+            diff_sql = f"{diff_sql.rstrip()}\n\n{routine_diff_sql.rstrip()}\n"
+        else:
+            diff_sql = f"{routine_diff_sql.rstrip()}\n"
     return diff_sql
+
+
+def _changed_routine_replacements_sql(db_from: Any, db_to: Any, schema: str) -> str:
+    """Return CREATE OR REPLACE SQL for routines whose bodies changed.
+
+    `results.schemadiff_as_sql()` can miss body-only routine changes. Detect
+    those by comparing `pg_get_functiondef` between the staged `from` and `to`
+    databases and emit replacement definitions from `to`.
+    """
+    from_map = _load_routine_definitions(db_from, schema)
+    to_map = _load_routine_definitions(db_to, schema)
+
+    replacements: list[str] = []
+    for key, to_def in sorted(to_map.items()):
+        from_def = from_map.get(key)
+        if from_def is None:
+            continue
+        if _normalize_sql(from_def) == _normalize_sql(to_def):
+            continue
+        replacements.append(f"{to_def.rstrip()}\n;")
+    return "\n\n".join(replacements)
+
+
+def _load_routine_definitions(db: Any, schema: str) -> dict[tuple[str, str, str, str], str]:
+    schema_lit = schema.replace("'", "''")
+    sql = f"""
+        SELECT
+            n.nspname,
+            p.prokind,
+            p.proname,
+            pg_get_function_identity_arguments(p.oid) AS identity_args,
+            pg_get_functiondef(p.oid) AS definition
+        FROM pg_proc p
+        JOIN pg_namespace n ON n.oid = p.pronamespace
+        WHERE n.nspname = '{schema_lit}'
+          AND p.prokind IN ('f', 'p')
+    """
+    with db.t() as t:
+        rows = t.execute(sql)
+
+    out: dict[tuple[str, str, str, str], str] = {}
+    for nspname, prokind, proname, identity_args, definition in rows:
+        key = (str(nspname), str(prokind), str(proname), str(identity_args))
+        out[key] = str(definition)
+    return out
+
+
+def _load_routine_signatures(db: Any, schema: str) -> set[tuple[str, str]]:
+    schema_lit = schema.replace("'", "''")
+    sql = f"""
+        SELECT
+            CASE p.prokind
+                WHEN 'p' THEN 'procedure'
+                ELSE 'function'
+            END,
+            n.nspname || '.' || p.proname || '(' || oidvectortypes(p.proargtypes) || ')'
+        FROM pg_proc p
+        JOIN pg_namespace n ON n.oid = p.pronamespace
+        WHERE n.nspname = '{schema_lit}'
+          AND p.prokind IN ('f', 'p')
+    """
+    with db.t() as t:
+        rows = t.execute(sql)
+    return {
+        (_normalize_routine_kind(str(kind)), _normalize_signature_text(str(sig)))
+        for kind, sig in rows
+    }
+
+
+def _strip_unsafe_routine_drops(diff_sql: str, target_signatures: set[tuple[str, str]]) -> str:
+    """Remove DROP FUNCTION/PROCEDURE statements for routines still in target.
+
+    Some diffs emit a DROP for a routine that is still present in the target
+    schema (typically a body-only or property-only change). That can fail when
+    other objects depend on the routine; `CREATE OR REPLACE` is the safe path.
+    """
+    if not diff_sql.strip():
+        return diff_sql
+
+    out_lines: list[str] = []
+    drop_re = re.compile(
+        r"^\s*drop\s+(function|procedure)\s+if\s+exists\s+(.+?)\s*;\s*$",
+        re.IGNORECASE,
+    )
+
+    for line in diff_sql.splitlines():
+        m = drop_re.match(line)
+        if m:
+            target_key = (
+                _normalize_routine_kind(m.group(1)),
+                _normalize_signature_text(m.group(2)),
+            )
+            if target_key in target_signatures:
+                continue
+        out_lines.append(line)
+    return "\n".join(out_lines)
+
+
+def _normalize_routine_kind(kind: str) -> str:
+    return kind.strip().lower()
+
+
+def _normalize_signature_text(sig: str) -> str:
+    s = sig.replace('"', "").strip()
+    s = re.sub(r"\s*,\s*", ",", s)
+    s = re.sub(r"\(\s*", "(", s)
+    s = re.sub(r"\s*\)", ")", s)
+    s = re.sub(r"\s+", " ", s)
+    return s
+
+
+def _normalize_sql(sql: str) -> str:
+    return "\n".join(line.rstrip() for line in sql.strip().splitlines())
 
 
 def write_incremental(

@@ -80,3 +80,73 @@ def test_makemigration_wraps_diff_with_files_and_sql(
     assert '"sampleext"."extra"' in body
     assert "SELECT 42;" in body
     assert "SELECT 'done';" in body
+
+
+def test_makemigration_includes_body_only_function_changes(
+    staged_project: Path,
+    pg_url: str,
+):
+    from pgpkg.api import stage_version
+
+    # Change only function body/signature internals without adding/removing objects.
+    (staged_project / "sql" / "020_functions.sql").write_text(
+        """CREATE OR REPLACE FUNCTION sampleext.item_count()
+RETURNS bigint
+LANGUAGE sql
+AS $$
+    SELECT count(*) + 1 FROM sampleext.items;
+$$;
+"""
+    )
+    stage_version(staged_project, "unreleased")
+
+    path = generate_incremental(
+        staged_project,
+        from_version="0.2.0",
+        to_version="unreleased",
+        base_url=pg_url,
+    )
+    body = path.read_text().lower()
+    assert "create or replace function sampleext.item_count()" in body
+    assert "count(*) + 1" in body
+
+
+def test_makemigration_includes_body_only_procedure_changes(
+    staged_project: Path,
+    pg_url: str,
+):
+    from pgpkg.api import stage_version
+
+    (staged_project / "sql" / "020_functions.sql").write_text(
+        """CREATE OR REPLACE PROCEDURE sampleext.refresh_items()
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    PERFORM count(*) FROM sampleext.items;
+END;
+$$;
+"""
+    )
+    stage_version(staged_project, "0.2.0")
+
+    (staged_project / "sql" / "020_functions.sql").write_text(
+        """CREATE OR REPLACE PROCEDURE sampleext.refresh_items()
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    PERFORM count(*) + 1 FROM sampleext.items;
+END;
+$$;
+"""
+    )
+    stage_version(staged_project, "unreleased")
+
+    path = generate_incremental(
+        staged_project,
+        from_version="0.2.0",
+        to_version="unreleased",
+        base_url=pg_url,
+    )
+    body = path.read_text().lower()
+    assert "create or replace procedure sampleext.refresh_items()" in body
+    assert "count(*) + 1" in body
