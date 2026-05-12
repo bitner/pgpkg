@@ -28,7 +28,9 @@ class ApplyResult:
     """What `apply_plan` did."""
 
     bootstrapped_from: str | None = None
-    applied_steps: list[tuple[str, str]] = field(default_factory=list)  # (from, to) per step
+    applied_steps: list[tuple[str, str]] = field(
+        default_factory=list
+    )  # (from, to) per step
     final_version: str | None = None
 
     @property

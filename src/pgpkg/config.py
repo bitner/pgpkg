@@ -48,7 +48,9 @@ def load_config(project_root: str | Path) -> ProjectConfig:
 
     project_name = pgpkg_cfg.get("project_name") or data.get("project", {}).get("name")
     if not project_name:
-        raise ConfigError("[tool.pgpkg].project_name is required (or set [project].name).")
+        raise ConfigError(
+            "[tool.pgpkg].project_name is required (or set [project].name)."
+        )
     if not isinstance(project_name, str) or not project_name.strip():
         raise ConfigError("[tool.pgpkg].project_name must be a non-empty string.")
 
